@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 
 export default defineConfig([
-  globalIgnores(['**/dist/**', 'node_modules/**', '.references/**', 'playwright-report/**', 'test-results/**']),
+  globalIgnores(['**/dist/**', '.pages-preview/**', '.release-assets/**', '.omx/**', 'node_modules/**', '.references/**', 'playwright-report/**', 'test-results/**']),
   js.configs.recommended,
   ...tseslint.configs.recommended,
   { languageOptions: { globals: { ...globals.browser, ...globals.node } } },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import App from '../App';
 import { usePwa } from '../pwa';
-import { desktopDownload } from '../site-mode';
+import { desktopDownload } from '../site-mode.ts';
 import banner from '../../assets/jevos-desktop.png';
 import './site.css';
 

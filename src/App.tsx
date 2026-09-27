@@ -9,7 +9,7 @@ import { createWorkspaceClient, WorkspaceClientError } from './persistence';
 import type { ActionKind, DecisionProposal, WorkspaceSnapshot } from './persistence';
 import { usePwa } from './pwa';
 import './styles.css';
-import { staticSite } from './site-mode';
+import { staticSite } from './site-mode.ts';
 import { createLocalWorkspaceClient } from './site/local-workspace';
 
 const STORAGE = 'vibeos-workspace-v2';

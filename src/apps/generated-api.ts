@@ -1,4 +1,4 @@
-import { staticSite } from '../site-mode';
+import { staticSite } from '../site-mode.ts';
 import type { GeneratedAppPackage } from './contracts';
 import { checkedAppState } from './instance-state.ts';
 

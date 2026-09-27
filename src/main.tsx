@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import Site from './site/Site';
-import { staticSite } from './site-mode';
+import { staticSite } from './site-mode.ts';
 import './styles.css';
 import './desktop-glass.css';
 import './app-transparency.css';

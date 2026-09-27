@@ -5,7 +5,7 @@ import type { Conversation } from './model';
 import { generatedContentEvent, readGeneratedContent } from './context';
 import styles from './Messages.module.css';
 import { musicForMessage } from './music-action';
-import { staticSite } from '../../site-mode';
+import { staticSite } from '../../site-mode.ts';
 
 export default function Messages({ host, workspace, workspaceId, active }: BuiltinAppProps & { workspaceId?: string | null }) {
   const [state, setState] = useState(() => normalizeConversation(host.loadState()));

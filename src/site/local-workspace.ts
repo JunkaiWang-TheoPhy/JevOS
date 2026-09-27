@@ -1,5 +1,5 @@
-import { hydrate, initialWorkspace, isMode } from '../workspace';
-import type { Mode } from '../workspace';
+import { hydrate, initialWorkspace, isMode } from '../workspace.ts';
+import type { Mode } from '../workspace.ts';
 import type { ActionKind, ActionReceipt, DecisionProposal, DecisionRequest, WorkspaceSnapshot } from '../persistence';
 
 const storage = 'jevos-browser-workspace';

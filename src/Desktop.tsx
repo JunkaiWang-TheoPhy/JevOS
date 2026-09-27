@@ -1,4 +1,4 @@
-import { staticSite } from './site-mode';
+import { staticSite } from './site-mode.ts';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { defineCatalog } from '@json-render/core';

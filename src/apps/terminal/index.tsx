@@ -4,7 +4,7 @@ import type { BuiltinAppDefinition, BuiltinAppProps } from '../contracts';
 import { executeTerminalCommand } from './commands';
 import styles from './Terminal.module.css';
 import UniversalShell from './UniversalShell';
-import { staticSite, desktopDownload } from '../../site-mode';
+import { staticSite, desktopDownload } from '../../site-mode.ts';
 import ui from './UniversalShell.module.css';
 
 export { executeTerminalCommand } from './commands';
