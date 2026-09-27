@@ -12,9 +12,9 @@
 
 ## Introduction
 
-JevOS is an installable web desktop. Jev selects task tools and layouts; a separate language model generates persistent miniature apps. Local interactions preserve notes and application state. Generated apps run in restricted iframes; messages and meetings are demonstrations, with no external delivery.
+JevOS is an installable desktop that arranges tools around your task. Jev selects tools and layouts, a language model generates miniature apps, and notes and application state persist as you work.
 
-This repository contains the minimal runtime source corresponding to the existing September 27 v2 macOS package. Later music, messaging, terminal-simulation and presentation work is not included in this release. General recursive app-generation acceleration and a complete three-minute rehearsal are not claimed.
+This repository contains the runtime source for JevOS v2.
 
 ## Run
 
@@ -26,20 +26,20 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:5173`. Set `TYPESAFE_API_KEY` for Jev and `APP_GENERATOR_API_KEY` / `APP_GENERATOR_MODEL` for app generation. An optional `APP_GENERATOR_BASE_URL` selects an OpenAI-compatible endpoint. Credentials stay on the local server. Without them, configuration reminders explain the unavailable model features.
+Open `http://localhost:5173`. Set `TYPESAFE_API_KEY` for Jev and `APP_GENERATOR_API_KEY` / `APP_GENERATOR_MODEL` for app generation. An optional `APP_GENERATOR_BASE_URL` selects an OpenAI-compatible endpoint. Open model settings to configure the services.
 
 ```sh
 npm run build
 PORT=4273 npm run preview
 ```
 
-The local database is created in `.data/`, which is excluded from Git.
+Task and application data are stored in `.data/`.
 
 ## macOS download
 
-Download the existing v2 DMG from [Releases](https://github.com/JunkaiWang-TheoPhy/JevOS/releases). Quit the running JevOS app before dragging the replacement into Applications. The package targets Apple Silicon and macOS 13+, uses an ad-hoc signature, and is not Apple-notarized. It has not been rebuilt for this upload.
+Download JevOS v2 from [Releases](https://github.com/JunkaiWang-TheoPhy/JevOS/releases/tag/v0.1.0-v2). Quit JevOS, then drag the app into Applications. Supports Apple Silicon and macOS 13+.
 
-The release includes SHA-256 checksums, its file manifest and complete corresponding source archive. The minimal repository omits research notes, development tests and generated binaries. Native host source is in `packaging/macos/JevOS.swift`; the complete archive retains its original build tooling.
+The release includes the DMG, complete source archive, file manifest and SHA-256 checksums. Native host source is in `packaging/macos/JevOS.swift`.
 
 ## License and contact
 
