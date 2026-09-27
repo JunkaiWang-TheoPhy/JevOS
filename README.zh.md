@@ -30,7 +30,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-打开 `http://localhost:5173`。填写 `TYPESAFE_API_KEY` 启用 Jev，填写 `APP_GENERATOR_API_KEY`、`APP_GENERATOR_MODEL` 启用应用生成。可用 `APP_GENERATOR_BASE_URL` 指定兼容接口。打开模型设置即可配置服务。
+打开 `http://localhost:5173`。填写 `TYPESAFE_API_KEY` 启用 Jev，填写 `APP_GENERATOR_API_KEY`、`APP_GENERATOR_MODEL` 启用应用生成。可用 `APP_GENERATOR_BASE_URL` 指定兼容接口。打开模型设置，填写用户自己的 API Key。
 
 ```sh
 npm run build

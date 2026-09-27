@@ -30,7 +30,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open `http://localhost:5173`. Set `TYPESAFE_API_KEY` for Jev and `APP_GENERATOR_API_KEY` / `APP_GENERATOR_MODEL` for app generation. An optional `APP_GENERATOR_BASE_URL` selects an OpenAI-compatible endpoint. Open model settings to configure the services.
+Open `http://localhost:5173`. Set `TYPESAFE_API_KEY` for Jev and `APP_GENERATOR_API_KEY` / `APP_GENERATOR_MODEL` for app generation. An optional `APP_GENERATOR_BASE_URL` selects an OpenAI-compatible endpoint. Enter your own API keys in model settings.
 
 ```sh
 npm run build
