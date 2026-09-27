@@ -1,0 +1,85 @@
+/* Native app surfaces only; generated iframe contents keep their own styles. */
+.desktop {
+  --app-glass: linear-gradient(145deg, #f9fcffd1, #f0f6ff96);
+  --app-title-glass: linear-gradient(#ffffff70, #e5edf85c);
+  --app-warm-glass: #fff9df66;
+  --app-dark-glass: #101b2bc7;
+  --app-control-glass: #ffffff80;
+  --app-panel-glass: linear-gradient(145deg, #f7fbffb3, #e5eefb80);
+}
+.desktop .desktop-window:not([data-tool^="generated:"]) {
+  background: var(--app-glass);
+  backdrop-filter: blur(28px) saturate(1.25);
+  -webkit-backdrop-filter: blur(28px) saturate(1.25);
+  box-shadow: inset 0 1px 0 #ffffffc7, 0 22px 60px #17234636, 0 3px 9px #12214426;
+}
+.desktop .desktop-window.is-active:not([data-tool^="generated:"]) {
+  box-shadow: inset 0 1px 0 #ffffffe0, 0 30px 80px #1723464a, 0 6px 18px #14203926;
+}
+.desktop .desktop-window:not([data-tool^="generated:"]) .window-titlebar {
+  background: var(--app-title-glass);
+  border-bottom-color: #536b8c24;
+  box-shadow: inset 0 1px 0 #ffffffa3;
+}
+.desktop .notes-app { background: var(--app-warm-glass); }
+.desktop .note-toolbar { background: #ffe79b45; border-bottom-color: #b29c5d24; color: #67552f; }
+.desktop .notes-app textarea { color: #3f3b32; }
+.desktop .notes-app textarea::placeholder { color: #776d57; }
+.desktop .notes-app .app-footnote { color: #77664a; }
+.desktop .mail-app { color: #253348; }
+.desktop .mail-app h2 { color: #1e2a3d; }
+.desktop .mail-app p { color: #3c4a60; }
+.desktop .mail-person small, .desktop .mail-person time, .desktop .mail-attachment small { color: #586579; }
+.desktop .mail-app blockquote { background: #dbe5ff55; color: #475574; }
+.desktop .mail-attachment { background: #ffffff26; border-color: #a6b5cc66; color: #475574; }
+.desktop .calendar-cover { background: linear-gradient(135deg, #d3eaff66, #d8dfff45); }
+.desktop .calendar-cover > span, .desktop .calendar-cover small { color: #486486; }
+.desktop .calendar-fields input, .desktop .calendar-form > input, .desktop .add-task input { background: var(--app-control-glass); }
+.desktop .calendar-form label { color: #536176; }
+.desktop .desktop-task-list > label { color: #414052; border-bottom-color: #75839824; }
+.desktop .contact-app { background: linear-gradient(180deg, #cff4e55c, #ffffff18); }
+.desktop .contact-app p, .desktop .contact-label { color: #47665e; }
+.desktop .calculator-app { background: linear-gradient(160deg, #ffecd647, #fff6ec24); }
+.desktop .calculator-keys button { background: var(--app-control-glass); color: #584237; }
+.desktop .calculator-keys button.operator { background: #ffbc8d80; color: #754221; }
+.desktop .calculator-keys button.equals { background: #dc8952e6; color: white; }
+.desktop .calculator-app > p { color: #775f4d; }
+.desktop .desktop-settings { background: var(--app-panel-glass); backdrop-filter: blur(30px) saturate(1.4); -webkit-backdrop-filter: blur(30px) saturate(1.4); }
+.desktop .desktop-settings p, .desktop .settings-label { color: #475872; }
+/* Specificity keeps this material through the separately owned Spotlight layout. */
+.desktop .launcher-backdrop .desktop-launcher {
+  background: var(--app-panel-glass);
+  backdrop-filter: blur(30px) saturate(1.45);
+  -webkit-backdrop-filter: blur(30px) saturate(1.45);
+  border-color: #ffffffb8;
+  box-shadow: inset 0 1px 0 #ffffffc7, inset 0 -1px 0 #ffffff40, 0 18px 60px #10284b36;
+}
+.desktop .launcher-backdrop .launcher-apps button { background: transparent; }
+.desktop .launcher-backdrop .launcher-apps button:hover,
+.desktop .launcher-backdrop .launcher-apps button:focus-visible { background: #ffffff66; }
+.desktop .launcher-backdrop .launcher-apps small { color: #42546d; }
+.desktop .desktop-window:is([data-tool="terminal"], [data-tool="motion-lab"]) {
+  background: var(--app-dark-glass);
+  border-color: #b5d9ff47;
+  backdrop-filter: blur(26px) saturate(1.2);
+  -webkit-backdrop-filter: blur(26px) saturate(1.2);
+}
+.desktop .desktop-window:is([data-tool="terminal"], [data-tool="motion-lab"]) .window-titlebar {
+  background: #0c172a66;
+  color: #d7e5f5;
+  border-bottom-color: #a6c7ed24;
+  box-shadow: inset 0 1px 0 #d3e7ff24;
+}
+.desktop .desktop-window:is([data-tool="terminal"], [data-tool="motion-lab"]) .window-caption svg { color: #a8c7e9; }
+.desktop .desktop-window:is([data-tool="terminal"], [data-tool="motion-lab"]) .app-host-body > section { background: transparent; }
+.desktop .desktop-window[data-tool="terminal"] .app-host-body > section > :is(header, form, footer) { background: #07132333; border-color: #acc8e52b; }
+.desktop .desktop-window[data-tool="motion-lab"] .app-host-body > section > div:has(input[type="range"]) { background: #07132333; border-color: #acc8e52b; }
+@supports not (backdrop-filter: blur(1px)) {
+  .desktop { --app-glass: #f2f6fc; --app-warm-glass: #fff9e5; --app-dark-glass: #101b2b; --app-panel-glass: #edf3fc; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .desktop { --app-glass: #f2f6fc; --app-title-glass: #edf2f8; --app-warm-glass: #fff9e5; --app-dark-glass: #101b2b; --app-control-glass: #fff; --app-panel-glass: #edf3fc; }
+  .desktop .desktop-window:not([data-tool^="generated:"]),
+  .desktop .desktop-settings,
+  .desktop .launcher-backdrop .desktop-launcher { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

@@ -6,6 +6,8 @@
 
 <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="AGPL-3.0" />
 
+<img src="assets/jevos-banner.png" alt="JevOS task tools arranged around shared work" width="100%" />
+
 </div>
 
 ## Introduction

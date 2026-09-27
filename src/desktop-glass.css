@@ -1,0 +1,207 @@
+/* Presentation-only layer. Keep the desktop/app runtime contracts in their owners. */
+.desktop {
+  --glass: linear-gradient(145deg, #ffffffa8, #ffffff52 65%, #ffffff80);
+  --glass-edge: #ffffffb3;
+  --ink: #20232b;
+  --accent: #007aff;
+  grid-template-rows: 30px 72px minmax(0, 1fr) 36px 100px;
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.desktop .desktop-wallpaper {
+  background: #83b6d1 url('/wallpapers/sierra-dawn.jpg') center / cover no-repeat;
+  filter: none;
+}
+.desktop .desktop-wallpaper i, .desktop .desktop-wallpaper b, .desktop .desktop-wallpaper em { display: none; }
+.desktop[data-theme="sunrise"] .desktop-wallpaper {
+  background: #83b6d1 url('/wallpapers/sierra-dawn.jpg') center / cover no-repeat;
+  filter: brightness(1.06) saturate(1.04);
+}
+.desktop[data-theme="lagoon"] .desktop-wallpaper {
+  background: #83b6d1 url('/wallpapers/sierra-dawn.jpg') center / cover no-repeat;
+  filter: brightness(.9) saturate(.96);
+}
+.desktop .desktop-menubar {
+  gap: 22px;
+  padding: 0 20px;
+  background: #ffffff38;
+  border-bottom: 1px solid #ffffff2b;
+  backdrop-filter: blur(30px) saturate(1.7);
+  -webkit-backdrop-filter: blur(30px) saturate(1.7);
+  font-size: 12px;
+  box-shadow: 0 1px 0 #00000006;
+}
+.desktop .desktop-menubar button { padding: 2px 5px; }
+.desktop .desktop-brand { letter-spacing: -.25px; font-weight: 700 !important; }
+.desktop .vibe-mark { color: #222733; font-size: 20px; }
+.desktop .desktop-system { font-size: 11px; gap: 12px; }
+.desktop .connection-mode { background: #ffffff30; padding: 2px 8px; }
+.desktop .desktop-command-bar { padding: 12px 22px; gap: 12px; }
+.desktop .command-launch {
+  min-width: 225px;
+  padding: 10px 13px !important;
+  border-radius: 22px;
+  background: var(--glass) !important;
+  border-color: var(--glass-edge) !important;
+  box-shadow: inset 0 1px 1px #ffffffb3, 0 4px 18px #26344714;
+  backdrop-filter: blur(26px) saturate(1.7);
+}
+.desktop .command-launch > span { color: #086ed9; }
+.desktop .command-launch strong { font-size: 12px; font-weight: 600; }
+.desktop .command-launch small { color: #525763; background: #ffffff63; border: 1px solid #ffffff66; }
+.desktop .desktop-command-bar nav {
+  padding: 4px;
+  gap: 2px;
+  border: 1px solid #ffffff75;
+  border-radius: 22px;
+  background: #ffffff42;
+  backdrop-filter: blur(26px) saturate(1.6);
+  box-shadow: inset 0 1px 1px #ffffffa3, 0 4px 16px #2634470d;
+}
+.desktop .desktop-command-bar nav button { background: transparent; border-radius: 17px; color: #343944; padding: 8px 11px; }
+.desktop .desktop-command-bar nav button[aria-pressed="true"] {
+  background: #ffffffe0;
+  color: #075cc3;
+  box-shadow: 0 1px 4px #23344f17, inset 0 1px 0 white;
+}
+.desktop .desktop-layout-actions button { border-radius: 20px; background: #ffffff73; border-color: #ffffff80; color: #343944; padding: 8px 12px; }
+.desktop .desktop-window {
+  border-radius: 15px;
+  border: 1px solid #ffffffd9;
+  background: #fdfdfdf5;
+  box-shadow: 0 22px 60px #17234636, 0 3px 9px #12214426, 0 0 0 1px #12214410;
+}
+.desktop .desktop-window.is-active { box-shadow: 0 32px 85px #1723464a, 0 6px 18px #14203926, 0 0 0 1px #12214412; }
+.desktop .window-titlebar {
+  height: 45px;
+  min-height: 45px;
+  background: linear-gradient(#f6f7f9ed, #ebeef3eb);
+  border-bottom: 1px solid #b9c1cb45;
+  color: #414650;
+  box-shadow: inset 0 1px 0 #fff;
+}
+.desktop .window-caption { font-size: 12px; font-weight: 600; }
+.desktop .window-caption svg { color: #6b727e; }
+.desktop .window-controls { gap: 8px; }
+.desktop .window-controls button { box-shadow: inset 0 0 0 1px #00000012; }
+.desktop .window-controls .window-close { background: #ff5f57; }
+.desktop .window-controls .window-minimize { background: #febc2e; }
+.desktop .window-controls .window-maximize { background: #28c840; }
+.desktop .window-resize { color: #6a717d80; }
+.desktop .desktop-bottom { padding: 0 24px; color: #243044; font-size: 10px; }
+.desktop .desktop-status, .desktop .intent-result { background: #ffffff85; border: 1px solid #ffffff90; border-radius: 16px; padding: 5px 10px; backdrop-filter: blur(20px); }
+.desktop .intent-result small { color: #3f4a60; }
+.desktop .desktop-status button { border: 0; background: #ffffff7a; color: #255f98; border-radius: 10px; }
+.desktop .desktop-dock {
+  position: relative;
+  gap: 8px;
+  padding: 12px 14px 7px;
+  border-radius: 25px;
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  box-shadow: inset 0 1px 1px #ffffffd9, inset 0 -1px 1px #ffffff66, 0 12px 40px #152c5940, 0 1px 4px #24395921;
+  backdrop-filter: blur(32px) saturate(1.8);
+  -webkit-backdrop-filter: blur(32px) saturate(1.8);
+}
+.desktop .dock-item, .desktop .dock-launcher { width: 58px; }
+.desktop .app-icon, .desktop .dock-launcher > span {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border-radius: 13px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--tool-color, #7767ed) 55%, white), var(--tool-color, #7767ed) 60%, color-mix(in srgb, var(--tool-color, #7767ed) 85%, #14234b));
+  box-shadow: inset 0 1px 1px #ffffffb3, inset 0 -1px 1px #00000020, 0 3px 5px #18234326;
+  transition: transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s;
+}
+.desktop .app-icon::after, .desktop .dock-launcher > span::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid #ffffff59;
+  background: linear-gradient(150deg, #ffffff45, transparent 45%);
+  pointer-events: none;
+}
+.desktop .app-icon svg { filter: drop-shadow(0 1px 1px #00000026); }
+.desktop .dock-launcher > span { color: white; background: linear-gradient(150deg, #4aa9ff, #7462e8 60%, #d964de); text-shadow: 0 2px 4px #573c9477; }
+.desktop .dock-item:hover .app-icon, .desktop .dock-launcher:hover > span { transform: translateY(-8px) scale(1.16); box-shadow: inset 0 1px 1px white, 0 8px 14px #18365733; }
+.desktop .dock-item:focus-visible .app-icon { transform: translateY(-5px); }
+.desktop .dock-item small, .desktop .dock-launcher small {
+  position: absolute;
+  bottom: calc(100% + 17px);
+  padding: 5px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #263044;
+  background: #f7faffee;
+  box-shadow: 0 3px 12px #15304526;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.desktop .dock-item:hover small, .desktop .dock-launcher:hover small, .desktop .dock-item:focus-visible small, .desktop .dock-launcher:focus-visible small { opacity: 1; }
+.desktop .dock-item i { margin-top: 6px; width: 4px; height: 4px; }
+.desktop .dock-item i.running { background: #263043; }
+.desktop .dock-separator { background: #24365033; height: 48px; }
+.desktop :is(.dock-item[aria-label="打开消息"], .launcher-apps button[style*="#8370ee"]) .app-icon { --tool-color: #168afa; }
+.desktop :is(.dock-item[aria-label="打开笔记"], .launcher-apps button[style*="#f1af37"]) .app-icon { background: linear-gradient(#ffd44b 0 29%, #fff9e8 29%); color: #b28528; }
+.desktop :is(.dock-item[aria-label="打开日历"], .launcher-apps button[style*="#559aef"]) .app-icon { background: linear-gradient(#fb5f61 0 29%, #fff 29%); color: #e14550; }
+.desktop :is(.dock-item[aria-label="打开评审待办"], .launcher-apps button[style*="#ee758d"]) .app-icon { background: linear-gradient(140deg, white, #e6ebf2); color: #168afa; }
+.desktop :is(.dock-item[aria-label="打开联系人"], .launcher-apps button[style*="#41b99b"]) .app-icon { --tool-color: #bf9270; }
+.desktop :is(.dock-item[aria-label="打开计算器"], .launcher-apps button[style*="#f07d52"]) .app-icon { --tool-color: #505660; color: #ffb762; }
+.desktop .dock-item[aria-label="打开终端"] .app-icon { background: linear-gradient(140deg, #3c414a, #11151e); color: #d8e8ee; }
+.desktop .launcher-backdrop { background: #14244022; backdrop-filter: blur(13px) saturate(1.2); }
+.desktop .desktop-launcher, .desktop .desktop-settings {
+  background: linear-gradient(145deg, #fafcffec, #f0f4fad9);
+  border: 1px solid #ffffffe6;
+  border-radius: 23px;
+  box-shadow: inset 0 1px 0 white, 0 30px 100px #18263e4a, 0 0 0 1px #22334b15;
+  backdrop-filter: blur(40px) saturate(1.5);
+}
+.desktop .launcher-heading > span { color: #168afa; }
+.desktop .launcher-heading h2 { color: #1e293d; letter-spacing: -.5px; font-size: 23px; }
+.desktop .launcher-heading p, .desktop .launcher-apps small, .desktop .desktop-settings p { color: #5e6a7e; }
+.desktop .desktop-launcher form > input { background: #ffffffb3; border-color: #bfcadc8c; border-radius: 12px; font-size: 14px; }
+.desktop .desktop-launcher form > button { background: #087bf5; border-color: #087bf5; border-radius: 12px; }
+.desktop .launcher-suggestions button { background: #dfeafc; color: #295f9d; border-radius: 13px; }
+.desktop .launcher-apps button { background: #ffffff70; border-color: #ffffffb3; border-radius: 16px; }
+.desktop .launcher-apps button:hover { background: #ffffffd9; }
+.desktop .launcher-note, .desktop .settings-label { color: #697588; }
+.desktop .desktop-settings > button { background: #e2ecfb; border-color: #cbdcf4; color: #285e9c; border-radius: 12px; }
+.desktop .desktop-empty { text-shadow: 0 2px 20px #20326655; }
+.desktop .desktop-empty h1 { font-weight: 600; letter-spacing: -1px; }
+.desktop button:focus-visible, .desktop input:focus-visible, .desktop textarea:focus-visible, .desktop a:focus-visible { outline-color: #007aff; }
+@supports not (backdrop-filter: blur(1px)) {
+  .desktop .desktop-menubar, .desktop .desktop-dock { background: #edf2faf2; }
+  .desktop .command-launch { background: #f6f8fcf2 !important; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .desktop .desktop-dock, .desktop .desktop-menubar, .desktop .desktop-launcher, .desktop .desktop-settings { background: #f0f4fc; backdrop-filter: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .desktop .dock-item:hover .app-icon, .desktop .dock-launcher:hover > span { transform: none; }
+}
+@media (max-width: 1000px) {
+  .desktop .desktop-command-bar { gap: 8px; padding: 10px 14px; }
+  .desktop .command-launch { min-width: 190px; }
+  .desktop .desktop-command-bar nav button { padding: 7px 8px; }
+}
+@media (max-width: 720px) {
+  .desktop { grid-template-rows: 32px auto minmax(360px, auto) auto 94px; }
+  .desktop .desktop-menubar { padding: 0 10px; gap: 8px; }
+  .desktop .desktop-system { gap: 6px; font-size: 9px; }
+  .desktop .desktop-command-bar { padding: 12px; }
+  .desktop .desktop-command-bar nav { width: 100%; }
+  .desktop .desktop-command-bar nav button { padding: 8px 7px; }
+  .desktop .command-launch { min-width: 0; }
+  .desktop .desktop-bottom { padding: 12px; }
+  .desktop .desktop-dock { max-width: calc(100vw - 20px); gap: 3px; padding: 10px 9px 6px; border-radius: 22px; }
+  .desktop .dock-item, .desktop .dock-launcher { width: 44px; }
+  .desktop .app-icon, .desktop .dock-launcher > span { width: 37px; height: 37px; border-radius: 10px; }
+  .desktop .dock-item small, .desktop .dock-launcher small { display: none; }
+  .desktop .dock-item:hover .app-icon, .desktop .dock-launcher:hover > span { transform: none; }
+  .desktop .desktop-status, .desktop .intent-result { padding: 5px 8px; }
+}

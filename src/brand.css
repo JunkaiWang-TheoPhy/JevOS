@@ -1,0 +1,70 @@
+/* Shared identity for both desktop editions; no runtime or layout protocol changes. */
+@font-face {
+  font-family: 'Jev Display';
+  src: url('/brand/fonts/space-grotesk.woff') format('woff');
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Jev Reading';
+  src: url('/brand/fonts/jev-reading.woff') format('woff');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+.desktop {
+  --brand-display: 'Jev Display', 'PingFang SC', system-ui, sans-serif;
+  --brand-reading: 'Jev Reading', 'Kaiti SC', 'Songti SC', serif;
+  font-family: var(--brand-display);
+  font-feature-settings: 'ss01' 1;
+}
+.desktop .desktop-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: 'Jev Display', sans-serif;
+  font-size: 17px;
+  font-weight: 650 !important;
+  letter-spacing: -.9px;
+  line-height: 1;
+}
+.desktop .vibe-mark {
+  display: inline-block;
+  width: 28px;
+  height: 28px;
+  margin-right: 2px;
+  flex: none;
+  font-size: 0;
+  background: url('/brand/mark.svg') center / contain no-repeat;
+}
+.desktop .dock-launcher > span {
+  font-size: 0;
+  background: url('/brand/app-icon.svg') center / cover no-repeat;
+}
+.desktop .dock-launcher > span::after { background: linear-gradient(150deg, #ffffff26, transparent 45%); }
+.desktop .command-launch > span, .desktop .launcher-heading > span {
+  display: inline-block;
+  flex: none;
+  width: 25px;
+  height: 25px;
+  font-size: 0;
+  background: url('/brand/mark.svg') center / contain no-repeat;
+}
+.desktop .desktop-empty > span { width: 100px; height: 100px; font-size: 0; background: url('/brand/mark.svg') center / contain no-repeat; filter: drop-shadow(0 5px 10px #30346624); }
+.desktop .desktop-empty h1 { font-family: var(--brand-reading); font-weight: 400; letter-spacing: .02em; font-size: clamp(28px, 4vw, 42px); }
+.desktop .mail-app h2 { font-family: var(--brand-reading); font-size: 25px; font-weight: 400; letter-spacing: .015em; line-height: 1.5; }
+.desktop .mail-app blockquote { font-family: var(--brand-reading); font-size: 15px; line-height: 1.9; }
+.desktop .notes-app textarea { font-family: var(--brand-reading); font-size: 17px; line-height: 1.95; letter-spacing: .025em; }
+.desktop .window-caption { font-size: 12px; font-weight: 600; letter-spacing: .015em; }
+.desktop .calendar-cover strong, .desktop .calculator-app output { font-family: 'Jev Display', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -.06em; }
+.desktop .desktop-system time { font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.desktop .launcher-apps strong { font-family: var(--brand-display); font-weight: 600; }
+.desktop .desktop-launcher form > input { font-family: var(--brand-display); letter-spacing: -.02em; }
+.desktop .terminal-app, .desktop .terminal-app input, .desktop .terminal-app textarea { font-family: 'SFMono-Regular', Consolas, monospace; font-feature-settings: normal; }
+@media (max-width: 720px) {
+  .desktop .desktop-brand { font-size: 15px; letter-spacing: -.7px; }
+  .desktop .vibe-mark { width: 24px; height: 24px; }
+  .desktop .mail-app h2 { font-size: 23px; }
+  .desktop .notes-app textarea { font-size: 16px; }
+}

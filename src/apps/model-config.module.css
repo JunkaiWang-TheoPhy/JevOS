@@ -1,0 +1,9 @@
+.reopen { position: fixed; right: 14px; bottom: 6px; z-index: 200002; padding: 5px 10px; border: 1px solid #ffffffb3; border-radius: 12px; background: #edf5fcdd; color: #294765; font-size: 11px; cursor: pointer; }
+.backdrop { position: fixed; inset: 0; z-index: 400000; display: grid; place-items: center; padding: 18px; background: #162b3c20; }
+.panel { width: min(500px, 100%); padding: 26px; border: 1px solid #ffffffc7; border-radius: 22px; background: #eef5fced; color: #20374c; box-shadow: 0 24px 80px #1630494d; backdrop-filter: blur(28px); }
+.panel h2 { margin: 0 0 16px; font-size: 23px; }
+.panel p, .panel li { line-height: 1.7; }
+.panel small { color: #526d81; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; justify-content: flex-end; }
+.actions button { padding: 10px 14px; border-radius: 10px; border: 1px solid #b7cad9; color: #264e70; background: #ffffffb3; cursor: pointer; }
+.actions button:focus-visible, .reopen:focus-visible { outline: 2px solid #167bcc; outline-offset: 3px; }

@@ -1,0 +1,105 @@
+/* Load after desktop-glass.css. Frost only the floating panel, never the desktop. */
+.desktop .launcher-backdrop {
+  position: fixed;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  padding: clamp(100px, 18vh, 180px) 18px 24px;
+}
+
+.desktop .desktop-launcher {
+  width: min(640px, 100%);
+  padding: 12px;
+  border: 1px solid #ffffffb3;
+  border-radius: 20px;
+  background: #edf3fcad;
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  box-shadow: inset 0 1px 0 #ffffffc7, 0 18px 60px #10284b36, 0 3px 12px #10284b1a;
+}
+
+.desktop .launcher-heading {
+  gap: 8px;
+  margin: 0 4px 6px;
+}
+
+.desktop .launcher-heading > span { font-size: 20px; }
+.desktop .launcher-heading h2 { margin: 0; font-size: 12px; font-weight: 500; letter-spacing: 0; color: #46566e; }
+.desktop .launcher-heading p, .desktop .launcher-note { display: none; }
+.desktop .launcher-heading > button { background: #ffffff45; color: #45556e; }
+
+.desktop .desktop-launcher form {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+  border-bottom: 1px solid #5268871f;
+}
+
+.desktop .desktop-launcher form > input {
+  flex: 1;
+  min-width: 0;
+  padding: 14px 10px;
+  font-size: 19px;
+  line-height: 1.4;
+  border-color: transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #172a44;
+}
+
+.desktop .desktop-launcher form > input::placeholder { color: #52637a; }
+.desktop .desktop-launcher form > input:focus { outline: 2px solid #168afa80; outline-offset: -2px; }
+.desktop .desktop-launcher form > button {
+  flex: none;
+  align-self: center;
+  padding: 9px 12px;
+  font-size: 11px;
+  border-radius: 10px;
+}
+
+.desktop .launcher-suggestions { flex-wrap: wrap; gap: 6px; margin: 10px 4px; }
+.desktop .launcher-suggestions button { background: #ffffff55; color: #315982; font-size: 11px; }
+.desktop .launcher-apps {
+  grid-template-columns: 1fr;
+  gap: 3px;
+  max-height: min(260px, 34dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.desktop .launcher-apps button {
+  display: grid;
+  grid-template-columns: 32px minmax(90px, 1fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+}
+
+.desktop .launcher-apps button:hover { background: #ffffff80; }
+.desktop .launcher-apps button:focus-visible { outline: 2px solid #168afa; outline-offset: -2px; background: #ffffff80; }
+.desktop .launcher-apps .app-icon { width: 28px; height: 28px; border-radius: 8px; }
+.desktop .launcher-apps .app-icon svg { width: 17px; height: 17px; }
+.desktop .launcher-apps strong { font-size: 13px; font-weight: 500; }
+.desktop .launcher-apps small { font-size: 11px; color: #506178; text-align: right; }
+
+@media (max-width: 600px) {
+  .desktop .launcher-backdrop { padding: 110px 12px 20px; }
+  .desktop .desktop-launcher { padding: 9px; border-radius: 17px; }
+  .desktop .desktop-launcher form { gap: 4px; }
+  .desktop .desktop-launcher form > input { padding: 12px 6px; font-size: 16px; }
+  .desktop .desktop-launcher form > button { padding: 9px 8px; font-size: 10px; }
+  .desktop .launcher-apps { max-height: min(220px, 30dvh); }
+  .desktop .launcher-apps button { gap: 8px; padding: 5px 8px; }
+  .desktop .launcher-apps small { font-size: 10px; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .desktop .desktop-launcher { background: #edf3fc; backdrop-filter: none; -webkit-backdrop-filter: none; }
+}

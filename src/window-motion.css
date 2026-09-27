@@ -1,0 +1,24 @@
+/* Animate existing frames: app DOM, iframe identity and input state stay intact. */
+.desktop .desktop-window {
+  transition:
+    left .46s cubic-bezier(.22, 1, .36, 1),
+    top .46s cubic-bezier(.22, 1, .36, 1),
+    width .46s cubic-bezier(.22, 1, .36, 1),
+    height .46s cubic-bezier(.22, 1, .36, 1),
+    box-shadow .18s;
+  animation-duration: .28s;
+  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* The pointer handler captures the currently rendered frame before setting
+   this marker, so interruption does not snap to the previous destination. */
+.desktop .desktop-window.is-interacting {
+  transition: box-shadow .18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desktop .desktop-window {
+    transition: none;
+    animation: none;
+  }
+}

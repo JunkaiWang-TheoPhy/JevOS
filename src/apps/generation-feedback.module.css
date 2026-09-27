@@ -1,0 +1,11 @@
+.backdrop { position: fixed; inset: 0; z-index: 300000; display: grid; place-items: center; padding: 18px; background: #14283b24; }
+.panel { width: min(530px, 100%); padding: 28px; color: #203146; background: #edf5fce8; border: 1px solid #ffffffd9; border-radius: 22px; box-shadow: 0 24px 80px #122d454a; backdrop-filter: blur(28px); }
+.panel:focus { outline: none; }
+.panel h2 { margin: 0 0 14px; font-size: 22px; }
+.panel p { margin: 0 0 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.panel small { color: #546a7f; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; justify-content: flex-end; }
+.actions button { padding: 10px 14px; border-radius: 11px; color: #314d69; border: 1px solid #a7bdce; background: #ffffffb3; cursor: pointer; }
+.actions .retry { color: #fff; background: #1679ce; border-color: #1679ce; }
+.actions button:focus-visible { outline: 2px solid #1679ce; outline-offset: 3px; }
+@media (prefers-reduced-transparency: reduce) { .panel { background: #edf5fc; backdrop-filter: none; } }

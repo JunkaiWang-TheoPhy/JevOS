@@ -1,0 +1,40 @@
+.lab { display: flex; flex-direction: column; height: 100%; min-height: 360px; min-width: 0; color: #dce8ee; background: #0b131c; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif; color-scheme: dark; }
+.header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 21px 15px; }
+.eyebrow { font-family: "SFMono-Regular", Consolas, monospace; font-size: 8px; color: #8395a5; letter-spacing: .16em; }
+.lab h2 { display: flex; align-items: baseline; gap: 10px; margin: 5px 0 0; font-size: 23px; font-weight: 550; letter-spacing: -.7px; color: #e9f3f6; }
+.lab h2 span { font-size: 10px; color: #9badb8; font-weight: 400; letter-spacing: .02em; }
+.status { display: flex; align-items: center; gap: 6px; flex-shrink: 0; color: #a0adb7; font-size: 9px; padding: 5px 8px; border: 1px solid #2a3641; border-radius: 5px; }
+.status i { width: 5px; height: 5px; border-radius: 50%; background: #82939e; }
+.live { color: var(--motion-accent); border-color: color-mix(in srgb, var(--motion-accent) 30%, #182730); }
+.live i { background: var(--motion-accent); }
+.instrument { position: relative; flex: 1; min-height: 125px; margin: 0 18px; border: 1px solid #2c3c4a; border-radius: 3px; background: #101a25; overflow: hidden; }
+.canvas { width: 100%; height: 100%; display: block; position: absolute; inset: 0; }
+.plotLabel { position: absolute; top: 10px; left: 12px; color: #9caebc; font: 8px "SFMono-Regular", Consolas, monospace; letter-spacing: .16em; pointer-events: none; }
+.scale { position: absolute; bottom: 8px; left: 12px; right: 12px; display: flex; justify-content: space-between; color: #8095a8; font: 8px "SFMono-Regular", Consolas, monospace; pointer-events: none; }
+.canvasError { position: absolute; inset: 40% 12px auto; text-align: center; font-size: 12px; color: #ffd09b; }
+.readouts { display: grid; grid-template-columns: 1fr 1fr 1.1fr; margin: 15px 20px 16px; }
+.readouts > div { border-right: 1px solid #273543; padding-left: 16px; }
+.readouts > div:first-child { padding-left: 0; }
+.readouts > div:last-child { border-right: 0; }
+.readouts span { display: block; color: #8599aa; font: 8px "SFMono-Regular", Consolas, monospace; letter-spacing: .13em; }
+.readouts strong { display: block; margin-top: 4px; color: #dce8ed; font: 28px "SFMono-Regular", Consolas, monospace; letter-spacing: -1.5px; }
+.readouts small { margin-left: 4px; color: #92a5b1; font-size: 10px; letter-spacing: 0; }
+.readouts .renderer { padding-top: 5px; font-size: 14px; letter-spacing: .04em; }
+.renderer small { display: block; margin: 5px 0 0; font-size: 9px; }
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; padding: 14px 20px 12px; border-top: 1px solid #24333f; background: #101a24; }
+.sliderControl label { display: flex; justify-content: space-between; font-size: 10px; color: #b7c6d0; }
+.sliderControl output { color: var(--motion-accent); font: 10px "SFMono-Regular", Consolas, monospace; }
+.lab .sliderControl input { display: block; width: 100%; height: 15px; padding: 0; margin: 9px 0 0; background: transparent; border: 0; box-shadow: none; accent-color: var(--motion-accent); cursor: pointer; }
+.colorControl { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
+.colorControl label { font-size: 10px; color: #b7c6d0; }
+.lab .colorControl input { width: 30px; height: 22px; padding: 1px; border: 1px solid #3a4d5b; border-radius: 3px; background: transparent; cursor: pointer; }
+.colorControl span { font: 9px "SFMono-Regular", Consolas, monospace; color: #94a8b7; }
+.footer { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 53px; padding: 9px 18px; border-top: 1px solid #253440; }
+.footer p { margin: 0; font-size: 9px; line-height: 1.6; color: #90a3b2; }
+.footer > div { display: flex; gap: 7px; flex-shrink: 0; }
+.lab .footer button { padding: 7px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-family: inherit; }
+.lab .footer .reset { border: 1px solid #3c4e5c; color: #b7cad7; background: transparent; }
+.lab .footer .play { border: 1px solid var(--motion-accent); color: #0d1e22; background: var(--motion-accent); }
+.lab .footer button:disabled { opacity: .4; cursor: default; }
+.lab button:focus-visible, .lab input:focus-visible { outline: 2px solid var(--motion-accent); outline-offset: 3px; }
+@media (max-width: 390px) { .header { padding: 13px 15px; } .lab h2 { font-size: 19px; } .lab h2 span { display: none; } .controls { gap: 12px; padding: 12px 15px; } .footer { align-items: flex-start; } .footer p { font-size: 8px; } }
