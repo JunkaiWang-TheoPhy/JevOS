@@ -43,7 +43,7 @@ export function createDataModel() {
   function restoreState(value) {
     if (value == null || (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0)) return { state: sampleState(), warning: '' };
     try { return { state: validateState(value), warning: '' }; }
-    catch (error) { return { state: sampleState(), warning: '已保存数据无法恢复，当前显示示例。' + error.message }; }
+    catch (error) { return { state: sampleState(), warning: '已保存数据无法恢复，当前显示初始数据。' + error.message }; }
   }
   function parseCSV(raw) {
     if (typeof raw !== 'string' || !raw.trim()) throw new Error('请先粘贴 CSV。');

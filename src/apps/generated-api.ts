@@ -1,3 +1,4 @@
+import { staticSite } from '../site-mode';
 import type { GeneratedAppPackage } from './contracts';
 import { checkedAppState } from './instance-state.ts';
 
@@ -48,12 +49,14 @@ async function request(path: string, options: RequestInit, fetcher: typeof fetch
 }
 
 export async function generateApp(prompt: string, signal: AbortSignal, fetcher?: typeof fetch) {
+  if (staticSite) throw new GeneratedApiError('下载 macOS 版，配置模型即可创建新应用。', 'DESKTOP_DOWNLOAD');
   const body = await request('/api/apps/generate', { method: 'POST', signal,
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt }) }, fetcher);
   return parseGeneratedApp(body.app);
 }
 
 export async function listGeneratedApps(signal: AbortSignal, fetcher?: typeof fetch): Promise<GeneratedAppMetadata[]> {
+  if (staticSite) return [];
   const body = await request('/api/apps', { signal }, fetcher);
   if (!Array.isArray(body.apps)) throw new GeneratedApiError('应用目录无效。', 'INVALID_RESPONSE');
   return body.apps.map(parseGeneratedMetadata);

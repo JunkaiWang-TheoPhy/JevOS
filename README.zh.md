@@ -14,7 +14,11 @@
 
 JevOS 是可安装的智能桌面，工具围绕当前任务组合。Jev 判断工具和布局，语言模型生成微应用，笔记和应用状态随工作持续保存。
 
-本仓库提供 JevOS v2 的运行源码。
+本仓库提供 JevOS 最新桌面与网站源码。
+
+## 网站
+
+[打开 JevOS](https://junkaiwang-theophy.github.io/JevOS/) · 下载桌面版，或在浏览器体验本地工具。
 
 ## 运行
 
@@ -37,7 +41,7 @@ PORT=4273 npm run preview
 
 ## macOS 下载
 
-在[发布页面](https://github.com/JunkaiWang-TheoPhy/JevOS/releases/tag/v0.1.0-v2)下载 JevOS v2。先退出 JevOS，再将应用拖入 Applications。支持 Apple Silicon、macOS 13+。
+在[发布页面](https://github.com/JunkaiWang-TheoPhy/JevOS/releases)下载 JevOS。先退出 JevOS，再将应用拖入 Applications。支持 Apple Silicon、macOS 13+。
 
 发布附件包含 DMG、完整源码、文件清单和 SHA-256。原生宿主源码位于 `packaging/macos/JevOS.swift`。
 

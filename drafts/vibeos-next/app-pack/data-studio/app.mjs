@@ -3,12 +3,12 @@ import { createDataModel, dataModel } from './model.mjs';
 /** Prebuilt acceptance/demo fixture. All initial values are labelled sample data. */
 export const dataStudioDraft = {
   id: 'draft-data-studio',
-  title: 'Data Studio · 预制样例',
+  title: 'Data Studio',
   createdAt: '2026-09-27T09:40:00.000Z',
   initialState: dataModel.sampleState(),
   html: `<main class="studio">
-    <header class="titlebar"><span class="appmark" aria-hidden="true">▥</span><strong>Data Studio</strong><span class="document-title">Untitled worksheet</span><span class="fixture-label">预制演示样例</span></header>
-    <div class="toolbar"><button id="import-open" type="button" aria-expanded="false" aria-controls="import-panel">↥ 导入 CSV</button><button id="sample-reset" type="button">↺ 重置示例</button><span class="toolbar-divider"></span><span id="source-label" class="source-label">示例数据</span><span class="toolbar-hint">单击单元格编辑</span></div>
+    <header class="titlebar"><span class="appmark" aria-hidden="true">▥</span><strong>Data Studio</strong><span class="document-title">Untitled worksheet</span></header>
+    <div class="toolbar"><button id="import-open" type="button" aria-expanded="false" aria-controls="import-panel">↥ 导入 CSV</button><button id="sample-reset" type="button">↺ 重置数据</button><span class="toolbar-divider"></span><span id="source-label" class="source-label">初始数据</span><span class="toolbar-hint">单击单元格编辑</span></div>
     <section id="import-panel" class="import-panel is-hidden" aria-label="导入 CSV">
       <div class="import-heading"><strong>导入一张表</strong><button id="import-close" type="button" aria-label="关闭导入">×</button></div>
       <p>首行为表头。支持逗号、引号及换行；最多 200 行（含表头）× 20 列。导入会替换当前表格。</p>
@@ -100,7 +100,7 @@ export const dataStudioDraft = {
       $('stat-sum').textContent = graph.count ? format(graph.sum) : '—';
       $('stat-mean').textContent = format(graph.mean);
       $('skipped-values').textContent = graph.empty || graph.invalid ? '跳过 ' + graph.empty + ' 个空值 / ' + graph.invalid + ' 个非数值或超范围值' : '按表格当前值计算';
-      $('source-label').textContent = state.source === 'sample' ? '示例数据 · 非真实实验' : '当前编辑数据';
+      $('source-label').textContent = state.source === 'sample' ? '初始数据' : '当前编辑数据';
       $('mode-line').setAttribute('aria-pressed', String(state.chartMode === 'line'));
       $('mode-bar').setAttribute('aria-pressed', String(state.chartMode === 'bar'));
       if (!graph.count) return;
@@ -135,7 +135,7 @@ export const dataStudioDraft = {
       try { $('csv-input').value = await file.text(); $('import-error').textContent = '已读取文件，点击导入数据后替换表格。'; }
       catch { $('import-error').textContent = '文件读取失败。'; }
     });
-    $('sample-reset').addEventListener('click', () => { state = model.sampleState(); refresh(); notice('已重置为预制示例数据'); void persist(); });
+    $('sample-reset').addEventListener('click', () => { state = model.sampleState(); refresh(); notice('数据已重置'); void persist(); });
     $('value-column').addEventListener('change', event => { state = model.validateState({ ...state, selectedColumn: Number(event.target.value) }); renderTable(); renderChart(); notice(''); void persist(); });
     for (const mode of ['line', 'bar']) $('mode-' + mode).addEventListener('click', () => { state = model.validateState({ ...state, chartMode: mode }); renderChart(); void persist(); });
     $('table-body').addEventListener('focusin', event => {
@@ -152,6 +152,6 @@ export const dataStudioDraft = {
         renderChart(); notice(''); void persist();
       } catch (error) { input.value = state.rows[row][column]; notice(error.message); }
     });
-    refresh(); $('save-status').textContent = recovered.warning ? '恢复失败 · 显示示例' : '状态已恢复'; notice(recovered.warning);
+    refresh(); $('save-status').textContent = recovered.warning ? '恢复失败 · 已恢复初始数据' : '状态已恢复'; notice(recovered.warning);
   })();`,
 };

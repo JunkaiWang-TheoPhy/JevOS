@@ -9,6 +9,8 @@ import { createWorkspaceClient, WorkspaceClientError } from './persistence';
 import type { ActionKind, DecisionProposal, WorkspaceSnapshot } from './persistence';
 import { usePwa } from './pwa';
 import './styles.css';
+import { staticSite } from './site-mode';
+import { createLocalWorkspaceClient } from './site/local-workspace';
 
 const STORAGE = 'vibeos-workspace-v2';
 const OWNER_COOKIE = 'vibeos-cache-owner';
@@ -70,7 +72,7 @@ export default function App() {
   const [online, setOnline] = useState(navigator.onLine);
   const [dataStatus, setDataStatus] = useState<DataStatus>(offlineCache ? 'dirty' : 'loading');
   const [draftHint, setDraftHint] = useState(offlineCache?.conflict ? '检测到数据冲突，请确认后保存本地修改。' : '');
-  const client = useRef(createWorkspaceClient()).current;
+  const client = useRef(staticSite ? createLocalWorkspaceClient() : createWorkspaceClient()).current;
   const stateRef = useRef(state);
   const owner = useRef<string | null>(offlineCache?.workspaceId || null);
   const initialized = useRef(false);
@@ -221,7 +223,7 @@ export default function App() {
   useEffect(() => {
     let active = true;
     if (navigator.onLine) void reconnectRef.current();
-    fetch('/api/health').then((response) => response.json()).then((health) => { if (active) setConfigured(health.configured === true); }).catch(() => {});
+    if (!staticSite) fetch('/api/health').then((response) => response.json()).then((health) => { if (active) setConfigured(health.configured === true); }).catch(() => {});
     const on = () => {
       setOnline(navigator.onLine);
       if (navigator.onLine) void reconnectRef.current();
@@ -327,7 +329,7 @@ export default function App() {
   }
 
   return <WorkspaceContext.Provider value={{ state, setState: edit }}>
-    <ModelConfigNotice />
+    {!staticSite && <ModelConfigNotice />}
     <Desktop state={state} workspaceId={owner.current} workspaceRevision={committed.current?.revision ?? 0} text={text}
       onTextChange={(value) => { invalidate(); setText(value); }}
       onSubmit={submit}

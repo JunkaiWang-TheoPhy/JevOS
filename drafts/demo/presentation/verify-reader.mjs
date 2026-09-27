@@ -1,0 +1,106 @@
+import { chromium, expect } from '@playwright/test';
+import { demoPresentationFixture as app } from './reader.mjs';
+import deck from './deck.json' with { type: 'json' };
+import { validateAppPackage } from '../../../server/app-generator.mjs';
+import { buildFrameDocument } from '../../../src/apps/generated/frame-document.ts';
+validateAppPackage(app);
+const bytes = Buffer.byteLength(app.html + app.css + app.js);
+if (bytes >= 256 * 1024) throw new Error('Package exceeds size limit');
+const browser = await chromium.launch({ channel: 'chrome' });
+try {
+ const page = await browser.newPage();
+ const errors = [];
+ page.on('pageerror', error => errors.push(error.message));
+ await page.setContent('<iframe id="app" sandbox="allow-scripts allow-forms" style="width:980px;height:700px"></iframe>');
+ const nonce = 'c'.repeat(32), doc = buildFrameDocument(app, nonce, app.id);
+ await page.evaluate(({doc, nonce, app}) => {
+  const frame = document.querySelector('iframe');
+  let state = structuredClone(app.initialState);
+  window.readerErrors = [];
+  window.rejectNext = false;
+  window.addEventListener('message', event => {
+   const data = event.data;
+   if (event.source !== frame.contentWindow || data.channel !== 'vibe-generated-v1' || data.nonce !== nonce || data.instanceId !== app.id) return;
+   if (data.type === 'runtime-error') window.readerErrors.push(data.message);
+   if (data.type === 'request') {
+    if (window.rejectNext) {window.rejectNext=false;frame.contentWindow.postMessage({...data,type:'response',ok:false,error:'controlled rejection'},'*');return;}
+    setTimeout(() => {state={...state,...data.args[0]};frame.contentWindow.postMessage({...data,type:'response',ok:true,value:state},'*');}, 80);
+   }
+  });
+  frame.onload = () => frame.contentWindow.postMessage({channel:'vibe-generated-v1',nonce,instanceId:app.id,type:'start',active:true,state},'*');
+  window.reopen = () => { frame.srcdoc=doc; };
+  frame.srcdoc=doc;
+ }, {doc,nonce,app});
+ const frame=page.frameLocator('#app');
+ await expect(frame.locator('#count')).toHaveText('1 / 6');
+ await expect(frame.locator('.thumbnail')).toHaveCount(6);
+ await expect(frame.locator('#notes')).toBeHidden();
+ await expect(frame.locator('#exit')).toBeHidden();
+ await expect(frame.locator('#prev')).toBeDisabled();
+ await expect.poll(()=>frame.locator('#slide-image').evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+ await page.screenshot({path:'/tmp/jev-presentation-reader-desktop.png'});
+ for(let i=0;i<6;i++) {
+  if(i) await frame.locator('#next').click();
+  await expect(frame.locator('#count')).toHaveText(`${i+1} / 6`);
+  await expect(frame.locator('#title')).toHaveText(deck[i].title);
+  await expect(frame.locator('#subtitle')).toHaveText(deck[i].subtitle);
+  await expect.poll(()=>frame.locator('#slide-image').evaluate(img=>img.complete&&img.naturalWidth>0)).toBe(true);
+  await expect(frame.locator('#slide-image')).toHaveAttribute('alt',deck[i].title);
+  await expect(frame.locator('#body li')).toHaveText(deck[i].body);
+  await frame.locator('#toggle-notes').click();
+  await expect(frame.locator('#notes')).toHaveText(deck[i].notes);
+  await frame.locator('#toggle-notes').click();
+ }
+ await expect(frame.locator('#next')).toBeDisabled();
+ await frame.locator('#prev').click();
+ await expect(frame.locator('#count')).toHaveText('5 / 6');
+ await frame.locator('[data-page="2"]').click();
+ await expect(frame.locator('#count')).toHaveText('3 / 6');
+ await page.evaluate(()=>window.reopen());
+ await expect(frame.locator('#count')).toHaveText('3 / 6');
+ await page.evaluate(()=>{window.rejectNext=true;});
+ await frame.locator('#next').click();
+ await expect(frame.locator('#status')).toHaveText('保存失败，请重试');
+ await expect(frame.locator('#count')).toHaveText('3 / 6');
+ await frame.locator('#zoom-in').click();
+ await expect(frame.locator('#zoom-level')).toHaveText('125%');
+ await frame.locator('#zoom-out').click();
+ await expect(frame.locator('#zoom-level')).toHaveText('100%');
+ for(let i=0;i<4;i++) await frame.locator('#zoom-in').click({force:true});
+ await expect(frame.locator('#zoom-level')).toHaveText('200%');
+ await expect(frame.locator('#zoom-in')).toBeDisabled();
+ await frame.locator('#zoom-fit').click();
+ await expect(frame.locator('#zoom-level')).toHaveText('100%');
+ for(let i=0;i<2;i++) await frame.locator('#zoom-out').click();
+ await expect(frame.locator('#zoom-level')).toHaveText('50%');
+ await expect(frame.locator('#zoom-out')).toBeDisabled();
+ await frame.locator('#present').click();
+ await expect(frame.locator('#zoom-level')).toHaveText('100%');
+ await expect(frame.locator('header')).toBeHidden();
+ await expect(frame.locator('#thumbnails')).toBeHidden();
+ await expect(frame.locator('#exit')).toBeVisible();
+ await frame.locator('#exit').press('ArrowRight');
+ await expect(frame.locator('#count')).toHaveText('4 / 6');
+ await frame.locator('#exit').press('ArrowLeft');
+ await expect(frame.locator('#count')).toHaveText('3 / 6');
+ await frame.locator('#exit').press('Escape');
+ await expect(frame.locator('header')).toBeVisible();
+ await frame.locator('#present').click();
+ await frame.locator('#exit').click();
+ await expect(frame.locator('#thumbnails')).toBeVisible();
+ await page.locator('#app').evaluate(el=>{el.style.width='390px';el.style.height='620px';});
+ await expect(frame.locator('#slide')).toBeVisible();
+ await frame.locator('#present').click();
+ await frame.locator('#zoom-in').click();
+ await expect(frame.locator('#zoom-level')).toHaveText('125%');
+ expect(await frame.locator('.stage').evaluate(el=>el.scrollWidth>el.clientWidth)).toBe(true);
+ await frame.locator('.stage').evaluate(el=>{el.scrollLeft=40;});
+ expect(await frame.locator('.stage').evaluate(el=>el.scrollLeft)).toBeGreaterThan(0);
+ await frame.locator('#zoom-fit').click();
+ const overflow=await page.frames().find(f=>f.parentFrame()).evaluate(()=>document.documentElement.scrollWidth>window.innerWidth);
+ expect(overflow).toBe(false);
+ expect(errors).toEqual([]);
+ expect(await page.evaluate(()=>window.readerErrors)).toEqual([]);
+ await page.screenshot({path:'/tmp/jev-presentation-reader.png'});
+ console.log(`PASS presentation reader: ${bytes} bytes; 6 exact deck pages, notes, next/previous, thumbnail, persisted reload, rejected commit unchanged, presentation/exit/arrows/Escape, actual rendered images loaded, zoom 50–200%/fit/mobile pan, mobile no overflow, zero iframe errors`);
+} finally {await browser.close();}

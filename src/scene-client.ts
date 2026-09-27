@@ -3,7 +3,7 @@ import type { DesktopState, ToolId } from './desktop-model';
 
 export interface SceneRect { x: number; y: number; width: number; height: number }
 export type SceneOperation = { type: 'open'; appId: string; windowId: string } |
-  { type: 'place'; windowId: string; rect: SceneRect } | { type: 'minimize'; windowId: string };
+  { type: 'place'; windowId: string; rect: SceneRect } | { type: 'minimize' | 'close'; windowId: string };
 export interface SceneProposal {
   proposalId: string; requestId: string; baseRevision: number; desktopRevision: number;
   operations: SceneOperation[]; focusWindowId: string | null; source: 'jev' | 'rules';
@@ -14,6 +14,12 @@ export interface SceneRequest {
   text: string; viewport: { width: number; height: number }; desktop: DesktopState;
   desktopRevision: number; baseRevision: number; signal: AbortSignal;
   pinnedWindowIds?: readonly string[]; editingWindowIds?: readonly string[];
+}
+export function deterministicDesktopAction(text: string): 'close' | 'minimize' | null {
+  const value = text.trim().replace(/[。！!]/g, '');
+  if (/^(?:请|帮我)?\s*(?:关闭|关掉)\s*(?:所有|全部)(?:\s*(?:窗口|应用))?$|^close\s+all(?:\s+windows)?$/i.test(value)) return 'close';
+  if (/^(?:请|帮我)?\s*(?:收起|最小化)\s*(?:所有|全部)(?:\s*(?:窗口|应用))?$|^minimize\s+all(?:\s+windows)?$/i.test(value)) return 'minimize';
+  return null;
 }
 
 export async function planDesktopScene(input: SceneRequest, fetcher: typeof fetch = fetch): Promise<SceneProposal> {
@@ -44,7 +50,7 @@ export async function planDesktopScene(input: SceneRequest, fetcher: typeof fetc
       if (!rect || !['x', 'y', 'width', 'height'].every(key => typeof rect[key] === 'number' && Number.isFinite(rect[key])) ||
           rect.x < 0 || rect.y < 0 || rect.width <= 0 || rect.height <= 0 ||
           rect.x + rect.width > input.viewport.width + 0.05 || rect.y + rect.height > input.viewport.height + 0.05) throw new Error('规划超出当前桌面。');
-    } else if (operation.type !== 'minimize') throw new Error('规划包含不支持的操作。');
+    } else if (!['minimize', 'close'].includes(operation.type)) throw new Error('规划包含不支持的操作。');
   }
   if (result.operations.some((operation: SceneOperation) => !ids.has(operation.windowId)) ||
       (result.focusWindowId !== null && !ids.has(result.focusWindowId))) throw new Error('规划引用了不存在的窗口。');
@@ -63,8 +69,12 @@ export function applyDesktopScene(current: DesktopState, proposal: SceneProposal
     const id = remap.get(operation.windowId) || operation.windowId;
     if (operation.type === 'place') next = { ...next, windows: next.windows.map(window => window.id === id ? { ...window, ...operation.rect, maximized: false } : window) };
     else if (operation.type === 'minimize') next = desktopReducer(next, { type: 'minimize', id });
+    else if (operation.type === 'close') next = desktopReducer(next, { type: 'close', id });
   }
   const focus = proposal.focusWindowId ? remap.get(proposal.focusWindowId) || proposal.focusWindowId : null;
+  const placed = proposal.operations.filter(operation => operation.type === 'place').map(operation => remap.get(operation.windowId) || operation.windowId);
+  const top = Math.max(0, ...next.windows.map(window => window.z));
+  next = { ...next, windows: next.windows.map(window => { const index = placed.indexOf(window.id); return index < 0 ? window : { ...window, z: top + index + 1 }; }) };
   if (focus && next.windows.some(window => window.id === focus && !window.minimized)) next = desktopReducer(next, { type: 'focus', id: focus });
   return next;
 }

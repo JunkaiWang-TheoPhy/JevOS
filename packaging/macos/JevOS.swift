@@ -208,8 +208,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKNavigationDelegate, 
             view.addSubview(input); inputs[entry.0] = input
         }
         let alert = NSAlert(); alert.messageText = "\(name) 模型设置"
-        let reminder = missing.isEmpty ? "必要字段已填写；实际连接结果以服务响应为准。" : "尚未配置：\(missing.joined(separator: "、"))。未配齐时每次启动都会提醒；关闭仅隐藏本次提示，可从标题栏重新打开。"
-        alert.informativeText = reminder + "\n配置只保存到本机应用数据目录（仅当前用户可读）。保存后重启本地服务。"
+        let reminder = missing.isEmpty ? "模型配置已填写。" : "请填写：\(missing.joined(separator: "、"))。"
+        alert.informativeText = reminder + "\n保存后重启服务。可通过标题栏重新打开配置。"
         alert.accessoryView = view; alert.addButton(withTitle: "保存并重启"); alert.addButton(withTitle: "关闭提示")
         guard alert.runModal() == .alertFirstButtonReturn else { return }
         let values = fields.map { key, _, _ in "\(key)=\(inputs[key]!.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "\n", with: "").replacingOccurrences(of: "\r", with: ""))" }.joined(separator: "\n") + "\n"

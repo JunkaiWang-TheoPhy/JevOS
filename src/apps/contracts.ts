@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import type { Workspace } from '../workspace';
+import type { DemoEffect } from './terminal/demo-commands';
 
 export type AppJson = null | boolean | number | string | AppJson[] | { [key: string]: AppJson };
 
@@ -20,10 +21,14 @@ export interface AppHostBridge {
   exportText(filename: string, content: string): void;
   loadState(): AppJson | null;
   saveState(value: AppJson): void;
+  registerActions?(handler: (action: string, args: Record<string, AppJson>) => string | Promise<string>): () => void;
+  runAction?(appId: string, action: string, args: Record<string, AppJson>): Promise<string>;
+  executeDesktopCommand?(effect: DemoEffect): Promise<string>;
 }
 
 export interface BuiltinAppProps {
   instanceId: string;
+  workspaceId?: string | null;
   workspace: Workspace;
   host: AppHostBridge;
   /** False when minimized or hidden: continuous animation must pause. */

@@ -1,6 +1,8 @@
 import type { AppDescriptor, BuiltinAppDefinition, GeneratedAppPackage } from './contracts';
 import { definition as terminal } from './terminal';
 import { definition as motionLab } from './motion-lab';
+import { definition as music } from './music';
+import { definition as messages } from './messages';
 
 const builtins = new Map<string, BuiltinAppDefinition>();
 const generated = new Map<string, GeneratedAppPackage>();
@@ -30,3 +32,5 @@ export function getGeneratedApp(windowId: string) { return generated.get(windowI
 
 registerBuiltinApp(terminal);
 registerBuiltinApp(motionLab);
+registerBuiltinApp(music);
+registerBuiltinApp(messages);

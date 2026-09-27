@@ -3,6 +3,9 @@ import type { FormEvent, KeyboardEvent } from 'react';
 import type { BuiltinAppDefinition, BuiltinAppProps } from '../contracts';
 import { executeTerminalCommand } from './commands';
 import styles from './Terminal.module.css';
+import UniversalShell from './UniversalShell';
+import { staticSite, desktopDownload } from '../../site-mode';
+import ui from './UniversalShell.module.css';
 
 export { executeTerminalCommand } from './commands';
 
@@ -18,7 +21,7 @@ function restoreHistory(host: BuiltinAppProps['host']): string[] {
   return [];
 }
 
-export default function Terminal({ workspace, host, active }: BuiltinAppProps) {
+function WorkspaceTerminal({ workspace, host, active }: BuiltinAppProps) {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [history, setHistory] = useState(() => restoreHistory(host));
   const [draft, setDraft] = useState('');
@@ -42,7 +45,11 @@ export default function Terminal({ workspace, host, active }: BuiltinAppProps) {
     setHistory(nextHistory);
     setHistoryIndex(null);
     setDraft('');
-    try { host.saveState({ history: nextHistory }); setStorageError(''); }
+    try {
+      const saved = host.loadState();
+      const retained = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+      host.saveState({ ...retained, history: nextHistory }); setStorageError('');
+    }
     catch { setStorageError('历史未保存；命令台仍可使用。'); }
     let result;
     try {
@@ -79,9 +86,21 @@ export default function Terminal({ workspace, host, active }: BuiltinAppProps) {
       <div className={styles.welcome}><span className={styles.wordmark}>JEV<span>OS</span></span><p>你的工作区，换一种入口。</p><p className={styles.muted}>读取真实笔记与待办 · 打开注册应用 · 本机计算</p><p className={styles.muted}>输入 <code>help</code> 开始。这里不执行系统 shell。</p></div>
       {entries.map(entry => <div className={styles.entry} key={entry.id}><div className={styles.command}><span>jev@workspace</span><span className={styles.path}>~</span><b>›</b><span>{entry.command}</span></div>{entry.output !== '' && <pre className={entry.ok ? styles.result : styles.error}>{entry.output}</pre>}</div>)}
     </div>
-    <form className={styles.prompt} onSubmit={submit}><label htmlFor={inputId}><span>jev</span><b>›</b><span className={styles.srOnly}>工作区命令</span></label><input id={inputId} ref={input} value={draft} maxLength={512} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder="help" onChange={event => { setDraft(event.target.value); setHistoryIndex(null); }} onKeyDown={navigateHistory} /><button type="submit" aria-label="执行命令">↵</button></form>
+    <form className={styles.prompt} onSubmit={submit}><label htmlFor={inputId}><span>jev</span><b>›</b><span className={styles.srOnly}>工作区命令</span></label><input id={inputId} aria-label="工作区命令" ref={input} value={draft} maxLength={512} autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder="help" onChange={event => { setDraft(event.target.value); setHistoryIndex(null); }} onKeyDown={navigateHistory} /><button type="submit" aria-label="执行命令">↵</button></form>
     <footer className={styles.footer}><span>{storageError || '/workspace · ↑↓ 历史 · Ctrl+L 清屏'}</span><span>LOCAL ONLY</span></footer>
   </section>;
+}
+
+export default function Terminal(props: BuiltinAppProps) {
+  const [mode, setMode] = useState<'simulation' | 'workspace'>(staticSite ? 'workspace' : 'simulation');
+  const owner = `${props.workspaceId || 'local'}:${props.instanceId}`;
+  return <div className={ui.container}>
+    <nav className={ui.switcher} aria-label="终端模式">
+      {staticSite ? <a href={desktopDownload}>打开完整桌面 ↗</a> : <button type="button" aria-pressed={mode === 'simulation'} onClick={() => setMode('simulation')}>万能 shell</button>}
+      <button type="button" aria-pressed={mode === 'workspace'} onClick={() => setMode('workspace')}>工作区命令</button>
+    </nav>
+    {mode === 'simulation' ? <UniversalShell key={owner} {...props} /> : <WorkspaceTerminal key={owner} {...props} />}
+  </div>;
 }
 
 export const definition: BuiltinAppDefinition = {

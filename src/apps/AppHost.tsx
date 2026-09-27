@@ -5,6 +5,8 @@ import { getBuiltinApp, getGeneratedApp } from './registry';
 import { readInstanceState, writeInstanceState } from './instance-state';
 import type { AppHostBridge, AppDescriptor } from './contracts';
 import GeneratedAppHost from './generated/GeneratedAppHost';
+import { registerAppActions, invokeAppAction } from './app-actions';
+import type { DemoEffect } from './terminal/demo-commands';
 
 interface Props {
   appId: string;
@@ -12,7 +14,8 @@ interface Props {
   workspaceId: string | null;
   active: boolean;
   apps: readonly AppDescriptor[];
-  openApp(id: string): void;
+  openApp(id: string): void | Promise<void>;
+  executeDesktopCommand?(effect: DemoEffect): Promise<string>;
 }
 
 class AppBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -26,8 +29,8 @@ class AppBoundary extends Component<{ children: ReactNode }, { error: string | n
 
 export default function AppHost(props: Props) {
   const context = useContext(WorkspaceContext);
-  const latest = useRef({ context, apps: props.apps, openApp: props.openApp });
-  latest.current = { context, apps: props.apps, openApp: props.openApp };
+  const latest = useRef({ context, apps: props.apps, openApp: props.openApp, executeDesktopCommand: props.executeDesktopCommand });
+  latest.current = { context, apps: props.apps, openApp: props.openApp, executeDesktopCommand: props.executeDesktopCommand };
   const transient = useRef(new Map<string, string>());
   const host = useMemo<AppHostBridge>(() => {
     const owner = props.workspaceId || 'local';
@@ -54,13 +57,24 @@ export default function AppHost(props: Props) {
       },
       loadState: () => readInstanceState(storage, owner, props.instanceId),
       saveState: value => writeInstanceState(storage, owner, props.instanceId, value),
+      registerActions: handler => registerAppActions(owner, props.appId, handler),
+      async runAction(appId, action, args) {
+        if (!latest.current.apps.some(app => app.id === appId)) throw new Error('该应用尚未注册。');
+        if (!/^(music\.(play|pause|next)|timer\.(start|pause|reset)|reader\.(bookmark|restore))$/.test(action)) throw new Error('不支持该应用动作。');
+        await latest.current.openApp(appId);
+        return invokeAppAction(owner, appId, action.slice(action.indexOf('.') + 1), args);
+      },
+      async executeDesktopCommand(effect) {
+        if (!latest.current.executeDesktopCommand) throw new Error('桌面命令接口尚未接入。');
+        return latest.current.executeDesktopCommand(effect);
+      },
     };
-  }, [props.workspaceId, props.instanceId]);
+  }, [props.workspaceId, props.instanceId, props.appId]);
   if (!context) return null;
   const builtin = getBuiltinApp(props.appId);
   const generated = getGeneratedApp(props.appId);
   return <AppBoundary>
-    {builtin ? <builtin.Component instanceId={props.instanceId} workspace={context.state} host={host} active={props.active} /> :
+    {builtin ? <builtin.Component instanceId={props.instanceId} workspaceId={props.workspaceId} workspace={context.state} host={host} active={props.active} /> :
       generated ? <GeneratedAppHost app={generated} instanceId={props.instanceId} host={host} active={props.active} /> :
         <div className="app-runtime-error" role="status">应用内容正在载入。</div>}
   </AppBoundary>;

@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { LAYOUT_CATALOG, resolveLayout } from './layout-catalog.mjs';
+import { morningWritingScene } from './demo-scene-recipe.mjs';
+import { eveningRestScene } from './evening-scene-recipe.mjs';
 
-const builtins = ['message', 'notes', 'calendar', 'tasks', 'contact', 'calculator', 'terminal', 'motion-lab'];
-const labels = { message: ['消息', '原文', '阅读'], notes: ['笔记'], calendar: ['日历', '日程'], tasks: ['待办', '任务'], contact: ['联系人'], calculator: ['计算器'], terminal: ['终端'], 'motion-lab': ['动画实验室'] };
+const builtins = ['message', 'notes', 'calendar', 'tasks', 'contact', 'calculator', 'terminal', 'motion-lab', 'music'];
+const labels = { message: ['消息', '原文', '阅读'], notes: ['笔记'], calendar: ['日历', '日程'], tasks: ['待办', '任务'], contact: ['联系人'], calculator: ['计算器'], terminal: ['终端'], 'motion-lab': ['动画实验室'], music: ['音乐', '音乐播放器', '听歌'] };
 const nodes = {
   stay: '用户明确要求保持桌面不变，或需求无法映射到已有能力。',
   local: '用户只调整一个已有窗口或进入专注模式，不要求重新组织全部工具。',
@@ -43,6 +45,21 @@ export function validateSceneInput(input, apps = []) {
   if (input.activeWindowId !== null && input.activeWindowId !== undefined && !ids.has(input.activeWindowId)) fail('活动窗口不存在。');
   return { ...input, text: input.text.trim() };
 }
+// Explicit app/side relationships are constraints, independent of model ranking.
+function horizontalPositions(text, apps) {
+  const positions = new Map();
+  const side = '(左(?:侧|边)?|右(?:侧|边)?)';
+  const join = '(?:\\s|窗口|播放器|是|为|放置?|放在|放到|移动到|安排在|位于|在|到|靠|占|三分之一|三分之二|\\d+\\s*\\/\\s*\\d+){0,8}';
+  for (const id of new Set([...builtins, ...apps.map(app => app.id)])) {
+    const names = [id, ...(labels[id] || []), ...apps.filter(app => app.id === id).map(app => app.title)].filter(Boolean);
+    for (const name of names) {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const match = text.match(new RegExp(`${side}${join}${escaped}`, 'i')) || text.match(new RegExp(`${escaped}${join}${side}`, 'i'));
+      if (match) { positions.set(id, match[1].startsWith('左') ? 'left' : 'right'); break; }
+    }
+  }
+  return positions;
+}
 function localAnswers(text) {
   return {
     stay: /保持.*不变|别动|不要.*调整|stay|keep.*layout/i.test(text),
@@ -69,6 +86,38 @@ function intersects(a, b) { return a.x < b.x + b.width && a.x + a.width > b.x &&
 export async function planScene(value, { apps = [], apiKey, model = 'jev-latest', fetcher = fetch, signal, timeoutMs = 7000 } = {}) {
   const started = performance.now();
   const input = validateSceneInput(value, apps);
+  const morning = morningWritingScene(input, apps);
+  if (morning) return morning;
+  const evening = eveningRestScene(input, apps);
+  if (evening) return evening;
+  const commandText = input.text.replace(/[\s，,。.!！?？]/g, '').toLowerCase();
+  if (/^(?:请)?(?:打开|启动|开启|open)jevos$/.test(commandText)) {
+    const existing = input.windows.find(window => window.appId === 'terminal');
+    const windowId = existing?.windowId ?? `scene-window-${randomUUID()}`;
+    return {
+      proposalId: `scene-${randomUUID()}`, requestId: input.requestId, baseRevision: input.baseRevision,
+      desktopRevision: input.desktopRevision, status: 'ready', source: 'rules',
+      operations: [{ type: 'open', appId: 'terminal', windowId }], focusWindowId: windowId,
+      transition: { preset: 'calm-reflow', durationMs: 0 },
+      trace: [{ phase: 'scope', node: 'open-workspace-terminal', result: true, source: 'rules' }],
+      layout: { id: 'open-terminal', candidateCount: 0, catalogCount: LAYOUT_CATALOG.length, uniqueCandidateCount: 0 },
+      missingCapabilities: [], explanation: '已打开 JevOS 工作区终端。',
+      elapsedMs: Math.round(performance.now() - started),
+    };
+  }
+  const closeAll = /^(?:请)?(?:关闭(?:所有|全部)(?:的)?(?:窗口|应用|app)?|(?:把)?(?:所有|全部)(?:的)?(?:窗口|应用|app)?(?:都)?(?:关闭|关掉)|closeall(?:windows|apps)?)$/.test(commandText);
+  const minimizeAll = /^(?:请)?(?:(?:收起|隐藏|最小化)(?:所有|全部)(?:的)?(?:窗口|应用|app)?|(?:把)?(?:所有|全部)(?:的)?(?:窗口|应用|app)?(?:都)?(?:收起|隐藏|最小化)|minimizeall(?:windows|apps)?)$/.test(commandText);
+  if (closeAll || minimizeAll) return {
+    proposalId: `scene-${randomUUID()}`, requestId: input.requestId, baseRevision: input.baseRevision,
+    desktopRevision: input.desktopRevision, status: 'ready', source: 'rules',
+    operations: input.windows.filter(window => closeAll || !window.minimized)
+      .map(window => ({ type: closeAll ? 'close' : 'minimize', windowId: window.windowId })),
+    focusWindowId: null, transition: { preset: 'calm-reflow', durationMs: 0 },
+    trace: [{ phase: 'scope', node: closeAll ? 'close-all' : 'minimize-all', result: true, source: 'rules' }],
+    layout: { id: closeAll ? 'close-all' : 'minimize-all', candidateCount: 0, catalogCount: LAYOUT_CATALOG.length, uniqueCandidateCount: 0 },
+    missingCapabilities: [], explanation: closeAll ? '已关闭所有窗口，应用数据保留。' : '已收起所有窗口，应用继续保留。',
+    elapsedMs: Math.round(performance.now() - started),
+  };
   let decisions = localAnswers(input.text);
   let source = 'rules';
   let confidences = {};
@@ -96,6 +145,8 @@ export async function planScene(value, { apps = [], apiKey, model = 'jev-latest'
   // Explicit preservation always wins over model decisions.
   const explicitStay = localAnswers(input.text).stay;
   if (explicitStay) decisions.stay = true;
+  const positions = horizontalPositions(input.text, apps);
+  if (!explicitStay && positions.size) { decisions.stay = false; decisions.local = false; decisions.explicitLayout = true; }
   const result = {
     proposalId: `scene-${randomUUID()}`, requestId: input.requestId, baseRevision: input.baseRevision,
     desktopRevision: input.desktopRevision, status: 'ready', operations: [], focusWindowId: input.activeWindowId ?? null,
@@ -113,7 +164,6 @@ export async function planScene(value, { apps = [], apiKey, model = 'jev-latest'
   if (decisions.stay) { result.status = 'stay'; result.explanation = '保持当前桌面。'; return finish(); }
   if (decisions.generate) result.generation = { prompt: input.text };
   if (decisions.reading && /论文|paper/i.test(input.text)) result.missingCapabilities.push('目前没有专用论文阅读器；消息窗口不能冒充论文阅读器。');
-  if (decisions.music) result.missingCapabilities.push('目前没有音乐播放器。');
   const forbidden = new Set();
   for (const [appId, names] of Object.entries(labels)) {
     if ([appId, ...names].some((name) => input.text.includes(`不要${name}`) || input.text.includes(`不需要${name}`) || input.text.includes(`不用${name}`))) forbidden.add(appId);
@@ -135,6 +185,7 @@ export async function planScene(value, { apps = [], apiKey, model = 'jev-latest'
   if (decisions.review) { add('tasks'); add('notes'); }
   if (decisions.coding) { add('terminal'); add('notes'); }
   if (decisions.analysis) { add('calculator'); add('notes'); }
+  if (decisions.music) add('music');
   // Server registered generated apps can be selected by exact title or id.
   for (const app of apps) if ((app.title && input.text.includes(app.title)) || input.text.includes(app.id)) add(app.id);
   // Explicit geometry of named apps is a hard boundary. A model association
@@ -161,10 +212,25 @@ export async function planScene(value, { apps = [], apiKey, model = 'jev-latest'
   const movable = selected.filter((window) => !preserved.some((fixed) => fixed.windowId === window.windowId));
   if (!movable.length) { result.status = 'stay'; result.explanation = '保留固定或正在编辑的窗口。'; return finish(); }
   const leftThird = /左.{0,12}(?:1\s*\/\s*3|三分之一)/.test(input.text);
-  const leftCalendar = /左.{0,20}(?:日历|日程)|(?:日历|日程).{0,20}左/.test(input.text);
   if (decisions.primaryNotes) movable.sort((a, b) => Number(b.appId === 'notes') - Number(a.appId === 'notes'));
-  if (leftCalendar) movable.sort((a, b) => Number(b.appId === 'calendar') - Number(a.appId === 'calendar'));
-  const candidates = LAYOUT_CATALOG.map((candidate) => ({ candidate, rects: resolveLayout(candidate, movable.length, input.viewport) }))
+  const sideRank = id => positions.get(id) === 'left' ? -1 : positions.get(id) === 'right' ? 1 : 0;
+  movable.sort((a, b) => sideRank(a.appId) - sideRank(b.appId));
+  const singleSide = movable.length === 1 && positions.has(movable[0].appId);
+  const hasSide = movable.some(window => positions.has(window.appId));
+  const candidates = LAYOUT_CATALOG.map((candidate) => {
+    let rects = resolveLayout(candidate, singleSide ? 2 : movable.length, input.viewport);
+    if (singleSide) {
+      if (rects[0].x === rects[1].x) return { candidate, rects: [] };
+      const ordered = [...rects].sort((a, b) => a.x - b.x);
+      rects = [positions.get(movable[0].appId) === 'left' ? ordered[0] : ordered[1]];
+    }
+    return { candidate, rects };
+  })
+    .filter(({ candidate, rects }) => rects.length === movable.length &&
+      (!singleSide || candidate.ratio === (leftThird ? 0.33 : 0.5)) &&
+      (!hasSide || singleSide || Math.max(...rects.map(rect => rect.x)) > Math.min(...rects.map(rect => rect.x))) &&
+      (singleSide || rects.every((rect, index) => !positions.has(movable[index].appId) ||
+        (positions.get(movable[index].appId) === 'left' ? rect.x === Math.min(...rects.map(item => item.x)) : rect.x === Math.max(...rects.map(item => item.x))))))
     .filter(({ candidate, rects }) => (!leftThird || candidate.ratio === 0.33 && candidate.direction !== 'reverse' && !['stack', 'primary-bottom', 'grid'].includes(candidate.family)) && rects.every((rect) =>
       rect.width >= Math.min(180, input.viewport.width - 24) && rect.height >= Math.min(100, input.viewport.height - 24) && rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= input.viewport.width + 0.02 && rect.y + rect.height <= input.viewport.height + 0.02 && !preserved.some((fixed) => !fixed.minimized && intersects(rect, fixed.rect))));
   const unique = new Map();

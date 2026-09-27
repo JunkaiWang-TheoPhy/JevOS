@@ -1,14 +1,15 @@
-export type ToolId = 'message' | 'notes' | 'calendar' | 'tasks' | 'contact' | 'calculator' | 'terminal' | 'motion-lab' | `generated:${string}`;
+export type ToolId = 'message' | 'notes' | 'calendar' | 'tasks' | 'contact' | 'calculator' | 'terminal' | 'motion-lab' | 'music' | `generated:${string}`;
 export interface WindowState { id: string; tool: ToolId; title: string; x: number; y: number; width: number; height: number; z: number; minimized: boolean; maximized: boolean }
 export interface DesktopState { windows: WindowState[]; activeId: string | null }
 export const TOOLS: Record<string, { title: string; subtitle: string; color: string; width?: number; height?: number }> = {
-  message: { title: '消息', subtitle: 'Alice 的模拟消息', color: '#6c8a75' },
+  message: { title: '消息', subtitle: 'Alice 的消息', color: '#6c8a75' },
   notes: { title: '笔记', subtitle: '留住当前思路', color: '#b29663' },
   calendar: { title: '日历', subtitle: '本地会议草稿', color: '#7c93a4' },
   tasks: { title: '评审待办', subtitle: '一起推进下一步', color: '#a48793' },
-  contact: { title: '联系人', subtitle: '模拟联系人 Alice', color: '#8d9b6c' },
+  contact: { title: '联系人', subtitle: '联系人 Alice', color: '#8d9b6c' },
   calculator: { title: '计算器', subtitle: '确定性本地计算', color: '#9386a4' },
   terminal: { title: 'Terminal', subtitle: 'JevOS 工作区命令台', color: '#354153', width: 590, height: 400 },
+  music: { title: '音乐', subtitle: '五首真实钢琴录音 · 本地曲库', color: '#a6563e', width: 740, height: 680 },
   'motion-lab': { title: 'Motion Lab', subtitle: '持续运行的粒子实验室', color: '#5d66df', width: 620, height: 470 },
 };
 export function registerDesktopTool(id: string, info: { title: string; subtitle: string; color: string; width?: number; height?: number }) {

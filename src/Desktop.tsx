@@ -1,3 +1,4 @@
+import { staticSite } from './site-mode';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent, ReactNode } from 'react';
 import { defineCatalog } from '@json-render/core';
@@ -10,12 +11,19 @@ import type { DesktopState, ToolId, WindowState } from './desktop-model';
 import type { Decision, Mode, Workspace } from './workspace';
 import type { usePwa } from './pwa';
 import AppHost from './apps/AppHost';
+import { applyShellDesktop } from './shell-desktop';
+import { resolveShellApp, type DemoEffect } from './apps/terminal/demo-commands';
 import GenerationFailure from './apps/GenerationFailure';
 import { generatedWindowId, registerGeneratedApp, getBuiltinApp, getGeneratedApp } from './apps/registry';
 import { generateApp, listGeneratedApps, loadGeneratedApp, readGeneratedCache, writeGeneratedCache } from './apps/generated-api';
 import type { GeneratedAppPackage, AppDescriptor } from './apps/contracts';
 import { dataStudioDraft } from '../drafts/vibeos-next/app-pack/data-studio/app.mjs';
-import { planDesktopScene, applyDesktopScene } from './scene-client';
+import { demoReaderFixture } from '../drafts/demo/app-pack/apps.mjs';
+import { demoPresentationFixture } from '../drafts/demo/presentation/reader.mjs';
+import { retroTimerFixture } from './apps/generated/retro-timer-fixture';
+import { publishGeneratedContent } from './apps/messages/context';
+import { planDesktopScene, applyDesktopScene, deterministicDesktopAction } from './scene-client';
+import { preparedAppForCommand } from './prepared-app-command';
 import './desktop.css';
 
 interface DesktopProps {
@@ -82,7 +90,7 @@ function useWorkspace() {
 
 function MessageApp() {
   return <article className="mail-app">
-    <div className="mail-tags"><span>收件箱</span><span>演示消息</span></div>
+    <div className="mail-tags"><span>收件箱</span></div>
     <h2>一起看看 JevOS 的下一步</h2>
     <div className="mail-person"><div className="person-avatar">A</div><div><strong>Alice</strong><small>alice@example.com</small></div><time>今天 10:24</time></div>
     <p>我们已经有了第一个原型。想和你核对任务切换的体验，再决定下一步。</p>
@@ -130,7 +138,7 @@ function TasksApp() {
 }
 
 function ContactApp() {
-  return <div className="contact-app"><div className="contact-orbit"><span>A</span><i /><b /></div><h2>Alice</h2><p>一起把项目做出来。</p><a href="mailto:alice@example.com">alice@example.com</a><span className="contact-label">来自当前演示消息</span><h3>联系作者</h3><a href="mailto:WangTheoPhys@outlook.com">WangTheoPhys@outlook.com</a><a href="https://Junkaiwang-theophy.github.io" target="_blank" rel="noreferrer">Junkai Wang · 个人网站 ↗</a></div>;
+  return <div className="contact-app"><div className="contact-orbit"><span>A</span><i /><b /></div><h2>Alice</h2><p>一起把项目做出来。</p><a href="mailto:alice@example.com">alice@example.com</a><span className="contact-label">来自当前消息</span><h3>联系作者</h3><a href="mailto:WangTheoPhys@outlook.com">WangTheoPhys@outlook.com</a><a href="https://Junkaiwang-theophy.github.io" target="_blank" rel="noreferrer">Junkai Wang · 个人网站 ↗</a></div>;
 }
 
 function CalculatorApp() {
@@ -174,6 +182,8 @@ export default function Desktop(props: DesktopProps) {
   const [failedGeneration, setFailedGeneration] = useState<{ prompt: string; message: string } | null>(null);
   const [interactingWindow, setInteractingWindow] = useState<string | null>(null);
   const generation = useRef<AbortController | null>(null);
+  const shellLayouts = useRef<DesktopState[]>([]);
+  useEffect(() => { shellLayouts.current = []; }, [props.workspaceId]);
   const pendingLayout = useRef<{ owner: string; windows: WindowState[] } | null>(null);
   const currentOwner = useRef(props.workspaceId);
   currentOwner.current = props.workspaceId;
@@ -204,11 +214,21 @@ export default function Desktop(props: DesktopProps) {
   }, [desktop, size, props.workspaceId, props.workspaceRevision, props.state, launcher]);
 
   async function planDesktop(value: string) {
+    const prepared = preparedAppForCommand(value);
+    if (prepared) { setFailedGeneration(null); setSceneStatus(''); setAppStatus(''); await launch(prepared); return; }
     const text = value.trim();
+    const localAction = deterministicDesktopAction(text);
+    if (localAction) {
+      userAction();
+      setDesktop(current => current.windows.reduce((next, window) => desktopReducer(next, { type: localAction, id: window.id }), current));
+      setSceneStatus(localAction === 'close' ? '已关闭全部窗口，应用数据仍保留。' : '已收起全部窗口。');
+      setLauncher(null); return;
+    }
     if (!text || text.length > 2000) { setSceneStatus('请输入不超过 2000 字的桌面需求。'); return; }
     if (!props.online || !props.workspaceId) { setSceneStatus('请先联网同步工作区，再调整桌面。'); return; }
     if (props.state.pinned) { setSceneStatus('组合已固定，请先取消固定再调整桌面。'); return; }
     userAction();
+    if (staticSite) { setDesktop(current => desktopReducer(current, { type: 'tile', width: size.width, height: size.height })); setSceneStatus('工具已排列，可从 Dock 打开更多应用。'); setLauncher(null); return; }
     const snapshot = sceneContext.current;
     const version = sceneRevision.current;
     const controller = new AbortController();
@@ -245,10 +265,11 @@ export default function Desktop(props: DesktopProps) {
 
   useEffect(() => {
     if (!props.workspaceId) return;
-    const cached = [dataStudioDraft, ...readGeneratedCache(props.workspaceId).filter(app => app.id !== dataStudioDraft.id)];
+    const prepared = [dataStudioDraft, demoReaderFixture, demoPresentationFixture, { ...retroTimerFixture, id: 'demo-rehearsal-timer', title: '计时器' }];
+    const cached = [...prepared, ...readGeneratedCache(props.workspaceId).filter(app => !prepared.some(item => item.id === app.id))];
     for (const app of cached) {
       const descriptor = registerGeneratedApp(app);
-      registerDesktopTool(descriptor.id, { title: descriptor.title, subtitle: app.id === dataStudioDraft.id ? '预制 CSV 与图表样例 · 本地交互' : '保存的生成式 App', color: descriptor.accent, width: descriptor.width, height: descriptor.height });
+      registerDesktopTool(descriptor.id, { title: descriptor.title, subtitle: app.id === dataStudioDraft.id ? 'CSV 与图表' : '保存的生成式 App', color: descriptor.accent, width: descriptor.width, height: descriptor.height });
     }
     setGeneratedApps(cached);
     setRemoteApps([]);
@@ -341,7 +362,7 @@ export default function Desktop(props: DesktopProps) {
     else composition(props.state.mode);
   }, [props.state.mode]);
 
-  const builtInIds: ToolId[] = ['message', 'notes', 'calendar', 'tasks', 'contact', 'calculator', 'terminal', 'motion-lab'];
+  const builtInIds: ToolId[] = ['message', 'notes', 'calendar', 'tasks', 'contact', 'calculator', 'terminal', 'motion-lab', 'music'];
   const appIds: ToolId[] = [...builtInIds, ...[...new Set([...generatedApps.map(app => app.id), ...remoteApps.map(app => app.id)])].map(id => generatedWindowId(id) as ToolId)];
   const descriptors: AppDescriptor[] = appIds.map(id => ({ id, title: TOOLS[id].title, icon: id.startsWith('generated:') ? '✦' : id,
     accent: colors[id] || TOOLS[id].color, width: TOOLS[id].width || 420, height: TOOLS[id].height || 420 }));
@@ -369,11 +390,15 @@ export default function Desktop(props: DesktopProps) {
     }
     setDesktop(current => desktopReducer(current, { type: 'open', tool }));
   }
-  async function createApp(value: string) {
+  async function createApp(value: string, fromShell = false) {
+    if (!fromShell) {
+      const prepared = preparedAppForCommand(value);
+      if (prepared) { setFailedGeneration(null); setSceneStatus(''); setAppStatus(''); await launch(prepared); return; }
+    }
     const prompt = value.trim();
     setFailedGeneration(null); setSceneStatus('');
-    if (!prompt || prompt.length > 2000) { setFailedGeneration({ prompt, message: '请描述一个不超过 2000 字的小应用。' }); return; }
-    if (!props.online) { setFailedGeneration({ prompt, message: '生成新应用需要联网，已保存的应用仍可使用。' }); return; }
+    if (!prompt || prompt.length > 2000) { if (fromShell) throw new Error('请描述一个不超过 2000 字的小应用。'); setFailedGeneration({ prompt, message: '请描述一个不超过 2000 字的小应用。' }); return; }
+    if (!props.online) { if (fromShell) throw new Error('生成新应用需要联网。'); setFailedGeneration({ prompt, message: '生成新应用需要联网，已保存的应用仍可使用。' }); return; }
     userAction(); setLauncher(null);
     generation.current?.abort();
     const controller = new AbortController(); generation.current = controller;
@@ -385,8 +410,10 @@ export default function Desktop(props: DesktopProps) {
       const app = await generateApp(prompt, controller.signal);
       if (generation.current !== controller || controller.signal.aborted || owner !== currentOwner.current) return;
       const tool = install(app);
+      if (owner) publishGeneratedContent(owner, prompt, app.title);
       setDesktop(current => desktopReducer(current, { type: 'open', tool }));
       setAppStatus(`${app.title} 已生成并保存。`);
+      return `${app.title} 已生成并保存。`;
     } catch (error) {
       if (generation.current === controller && owner === currentOwner.current) {
         if (controller.signal.aborted && !timedOut) setAppStatus('本次生成已取消。');
@@ -395,10 +422,55 @@ export default function Desktop(props: DesktopProps) {
           setFailedGeneration({ prompt, message: timedOut ? '生成耗时过长，请重试或缩小需求。' : error instanceof Error ? error.message : '应用生成失败。' });
         }
       }
+      if (fromShell) throw error;
     } finally {
       clearTimeout(timeout);
       if (generation.current === controller) { generation.current = null; setGenerating(false); }
     }
+  }
+  async function executeShellCommand(effect: DemoEffect): Promise<string> {
+    userAction();
+    if (effect.type === 'create-app') {
+      const result = await createApp(effect.prompt, true);
+      if (!result) throw new Error('生成已取消，未打开新应用。');
+      return result;
+    }
+    if (effect.type === 'clear' || effect.type === 'app-action') throw new Error('该动作应由终端或应用执行。');
+    const owner = currentOwner.current;
+    const available = descriptors;
+    const targets = effect.type === 'split' ? effect.appIds : effect.type === 'scene' ?
+      (effect.name === 'morning' ? ['reader', 'notes', 'music', 'timer'] : effect.name === 'pitch' ? ['notes', 'timer'] : ['notes'])
+        .map(name => { const app = resolveShellApp(name, available); if (!app) throw new Error(`场景缺少 ${name} 应用。`); return app.id; }) :
+      effect.type === 'open' ? [effect.appId] : [];
+    for (const id of targets) {
+      if (id.startsWith('generated:') && !getGeneratedApp(id)) {
+        const app = await loadGeneratedApp(id.slice('generated:'.length), AbortSignal.timeout(15000));
+        if (owner !== currentOwner.current) throw new Error('工作区已切换，本次命令取消。');
+        install(app);
+      }
+    }
+    if (owner !== currentOwner.current) throw new Error('工作区已切换，本次命令取消。');
+    const current = sceneContext.current;
+    if (effect.type === 'undo-layout') {
+      const previous = shellLayouts.current.pop();
+      if (!previous) throw new Error('没有可撤销的终端布局。');
+      const windows = current.desktop.windows.map(window => {
+        const old = previous.windows.find(item => item.id === window.id);
+        return old ? { ...window, x: old.x, y: old.y, width: old.width, height: old.height, z: old.z, minimized: old.minimized, maximized: old.maximized } : { ...window, minimized: true };
+      });
+      setDesktop({ windows, activeId: windows.some(window => window.id === previous.activeId && !window.minimized) ? previous.activeId : null });
+      return '已恢复上一布局，App 内容保留。';
+    }
+    const next = applyShellDesktop(current.desktop, effect, current.size, available);
+    if (['tile', 'split', 'move', 'resize', 'scene'].includes(effect.type)) {
+      shellLayouts.current = [...shellLayouts.current, structuredClone(current.desktop)].slice(-10);
+    }
+    setDesktop(next);
+    if (effect.type === 'focus') requestAnimationFrame(() => {
+      const window = next.windows.find(item => item.tool === effect.appId);
+      if (window) stage.current?.querySelector<HTMLElement>(`[data-testid="window-${CSS.escape(window.tool)}"] textarea, [data-testid="window-${CSS.escape(window.tool)}"] input:not([disabled])`)?.focus();
+    });
+    return effect.type === 'scene' ? `已切换 ${effect.name} 场景。` : effect.type === 'open' ? `已打开 ${TOOLS[effect.appId]?.title || effect.appId}。` : '桌面操作已完成。';
   }
   function beginPointer(event: PointerEvent<HTMLElement>, window: WindowState, kind: 'move' | 'resize') {
     if (size.width < 720 || window.maximized || (kind === 'move' && (event.target as HTMLElement).closest('button'))) return;
@@ -436,30 +508,30 @@ export default function Desktop(props: DesktopProps) {
   }
   return <div className="desktop app" data-mode={props.state.mode} data-theme={theme}>
     <div className="desktop-wallpaper" aria-hidden="true"><i /><b /><em /></div>
-    <header className="desktop-menubar"><button className="desktop-brand" onClick={() => setLauncher(current => current === 'apps' ? null : 'apps')} aria-label="打开应用启动器"><span className="vibe-mark">✳</span> JevOS</button><div className="desktop-menu-actions"><button onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'tile', width: size.width, height: size.height })); }}>排列窗口</button><button onClick={() => { userAction(); setDesktop(current => visible.length ? current.windows.reduce((next, window) => desktopReducer(next, { type: 'minimize', id: window.id }), current) : desktopReducer(current, { type: 'restore' })); }}>{visible.length ? '显示桌面' : '恢复窗口'}</button><button onClick={() => setTheme(current => current === 'spectrum' ? 'sunrise' : current === 'sunrise' ? 'lagoon' : 'spectrum')}>换个壁纸</button></div><div className="desktop-system"><span className="connection-mode">{props.configured ? 'Jev 已配置' : '本地规则演示'}</span><span className="network-state">{props.online ? '在线' : '离线'}</span><time>{clock.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</time><button onClick={() => setSettings(current => !current)} aria-expanded={settings}>设置</button></div></header>
-    <section className="desktop-command-bar"><button className="command-launch" aria-label="桌面布局" onClick={() => setLauncher('layout')}><span>▦</span><strong>桌面布局</strong></button><button className="command-launch" aria-label="Vibe anything" onClick={() => setLauncher('generate')}><span>✦</span><strong>Vibe anything</strong><small>⌘ K</small></button><nav aria-label="工作区组合">{modes.map(item => <button key={item.mode} aria-pressed={props.state.mode === item.mode} onClick={() => { composition(item.mode); props.onManual(item.mode); }}><Icon tool={item.icon} size={15} />{item.label}</button>)}</nav><div className="desktop-layout-actions"><button aria-pressed={props.state.pinned} onClick={props.onPin}>{props.state.pinned ? '已固定组合' : '固定组合'}</button><button disabled={!props.canUndo} onClick={props.onUndo}>撤销</button></div></section>
+    <header className="desktop-menubar"><button className="desktop-brand" onClick={() => setLauncher(current => current === 'apps' ? null : 'apps')} aria-label="打开应用启动器"><span className="vibe-mark">✳</span> JevOS</button><div className="desktop-menu-actions"><button onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'tile', width: size.width, height: size.height })); }}>排列窗口</button><button onClick={() => { userAction(); setDesktop(current => visible.length ? current.windows.reduce((next, window) => desktopReducer(next, { type: 'minimize', id: window.id }), current) : desktopReducer(current, { type: 'restore' })); }}>{visible.length ? '显示桌面' : '恢复窗口'}</button><button onClick={() => setTheme(current => current === 'spectrum' ? 'sunrise' : current === 'sunrise' ? 'lagoon' : 'spectrum')}>换个壁纸</button></div><div className="desktop-system"><span className="connection-mode">{props.configured ? 'Jev 已配置' : '本地规则'}</span><span className="network-state">{props.online ? '在线' : '离线'}</span><time>{clock.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}</time><button onClick={() => setSettings(current => !current)} aria-expanded={settings}>设置</button></div></header>
+    <section className="desktop-command-bar"><button className="command-launch" aria-label="What you want do...." onClick={() => setLauncher('layout')}><span>▦</span><strong>What you want do....</strong></button><button className="command-launch" aria-label="Vibe anything" onClick={() => setLauncher('generate')}><span>✦</span><strong>Vibe anything</strong><small>⌘ K</small></button><nav aria-label="工作区组合">{modes.map(item => <button key={item.mode} aria-pressed={props.state.mode === item.mode} onClick={() => { composition(item.mode); props.onManual(item.mode); }}><Icon tool={item.icon} size={15} />{item.label}</button>)}</nav><div className="desktop-layout-actions"><button aria-pressed={props.state.pinned} onClick={props.onPin}>{props.state.pinned ? '已固定组合' : '固定组合'}</button><button disabled={!props.canUndo} onClick={props.onUndo}>撤销</button></div></section>
     <div className="desktop-stage" ref={stage} onBlurCapture={props.onSurfaceBlur}>
       {generating && <aside className="app-generation-progress" role="status"><span>✦</span><div><strong>一个新 App 正在诞生</strong><p>生成完成后会在独立窗口运行；已有应用继续使用。</p></div><button onClick={() => generation.current?.abort()}>取消生成</button></aside>}
       {!visible.length && <div className="desktop-empty"><span>✳</span><h1>从一个想法开始。</h1><p>打开一个工具，或描述接下来想做的事。</p><button onClick={() => setLauncher('apps')}>打开启动器 <kbd>⌘ K</kbd></button></div>}
       <RuntimeContext.Provider value={{ workspaceId: props.workspaceId, saved }}><JSONUIProvider registry={registry}>
         {desktop.windows.map(window => <section key={window.id} className={`desktop-window ${desktop.activeId === window.id ? 'is-active' : ''} ${window.maximized ? 'is-maximized' : ''} ${interactingWindow === window.id ? 'is-interacting' : ''}`} data-tool={window.tool} data-testid={`window-${window.tool}`} hidden={window.minimized} aria-label={`${TOOLS[window.tool].title}窗口`} style={frameStyle(window)} onPointerDown={() => { if (desktop.activeId !== window.id) { userAction(); setDesktop(current => desktopReducer(current, { type: 'focus', id: window.id })); } }}>
-          <header className="window-titlebar" onDoubleClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'maximize', id: window.id })); }} onPointerDown={event => beginPointer(event, window, 'move')} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}><div className="window-controls"><button className="window-close" aria-label={`关闭${TOOLS[window.tool].title}`} onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'close', id: window.id })); }}>×</button><button className="window-minimize" aria-label={`最小化${TOOLS[window.tool].title}`} onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'minimize', id: window.id })); }}>−</button><button className="window-maximize" aria-label={`最大化${TOOLS[window.tool].title}`} onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'maximize', id: window.id })); }}>＋</button></div><span className="window-caption"><Icon tool={window.tool} size={15} />{window.title}</span><span className="window-caption-space" /></header>
+          <header className="window-titlebar" onDoubleClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'maximize', id: window.id })); }} onPointerDown={event => beginPointer(event, window, 'move')} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer}><div className="window-controls"><button className="window-close" aria-label={`关闭${TOOLS[window.tool].title}`} onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'close', id: window.id })); }}>×</button><button className="window-minimize" aria-label={`最小化${TOOLS[window.tool].title}`} onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'minimize', id: window.id })); }}>−</button><button className="window-maximize" aria-label={`最大化${TOOLS[window.tool].title}`} onClick={() => { userAction(); setDesktop(current => desktopReducer(current, { type: 'maximize', id: window.id })); }}>＋</button></div><span className="window-caption"><Icon tool={window.tool} size={15} />{['generated:draft-data-studio', 'generated:demo-reader', 'generated:demo-presentation', 'generated:demo-rehearsal-timer'].includes(window.tool) ? TOOLS[window.tool].title : window.title}</span><span className="window-caption-space" /></header>
           <div className={`window-body workspace-grid ${getBuiltinApp(window.tool) || window.tool.startsWith('generated:') ? 'app-host-body' : ''}`}>
-            {getBuiltinApp(window.tool) || window.tool.startsWith('generated:') ? <AppHost appId={window.tool} instanceId={window.id} workspaceId={props.workspaceId} active={!window.minimized} apps={descriptors} openApp={id => { void launch(id as ToolId); }} /> : <Renderer spec={specs[window.tool]} registry={registry} />}
+            {getBuiltinApp(window.tool) || window.tool.startsWith('generated:') ? <AppHost appId={window.tool} instanceId={window.id} workspaceId={props.workspaceId} active={!window.minimized} apps={descriptors} openApp={id => launch(id as ToolId)} executeDesktopCommand={executeShellCommand} /> : <Renderer spec={specs[window.tool]} registry={registry} />}
           </div><div className="window-resize" onPointerDown={event => beginPointer(event, window, 'resize')} onPointerMove={movePointer} onPointerUp={endPointer} onPointerCancel={endPointer} aria-hidden="true">◢</div>
         </section>)}
       </JSONUIProvider></RuntimeContext.Provider>
     </div>
     <div className="desktop-bottom"><div className="desktop-status"><span role="status" aria-label="数据同步状态">{saved}{props.draftHint && ` · ${props.draftHint}`}</span><button onClick={props.onReconnect}>重新同步</button>{props.conflict && <button onClick={props.onConfirmLocal} disabled={!props.online}>确认保存本地修改</button>}</div><div className="intent-result" role="status">{generating ? '✦ 新 App 生成中…' : planning ? '✦ 桌面规划中…' : sceneStatus || appStatus || (props.busy ? '✦ 判断中…' : props.status)}{!generating && !planning && !sceneStatus && !appStatus && props.decision && <small>{props.decision.source === 'rules' ? '本地规则' : 'Jev'} · {Math.round(props.decision.elapsedMs)} ms</small>}</div></div>
-    <nav className="desktop-dock" aria-label="应用 Dock"><button className="dock-launcher" aria-label="打开应用启动器" onClick={() => setLauncher('apps')}><span>✳</span><small>启动器</small></button><div className="dock-separator" />{appIds.map(tool => <button key={tool} className="dock-item" aria-label={`打开${TOOLS[tool].title}`} onClick={() => launch(tool)} style={{ '--tool-color': colors[tool] || TOOLS[tool].color } as CSSProperties}><span className="app-icon"><Icon tool={tool} size={27} /></span><small>{TOOLS[tool].title}</small><i className={desktop.windows.some(window => window.tool === tool) ? 'running' : ''} /></button>)}</nav>
-    {launcher && <div className="launcher-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setLauncher(null); }}><section className="desktop-launcher" role="dialog" aria-label={launcher === 'layout' ? '桌面布局' : launcher === 'generate' ? 'Vibe anything' : '应用启动器'} aria-modal="true">
-      <div className="launcher-heading"><span>{launcher === 'layout' ? '▦' : '✦'}</span><div><h2>{launcher === 'layout' ? '调整你的桌面。' : launcher === 'generate' ? 'Vibe anything' : '打开已有应用。'}</h2><p>{launcher === 'layout' ? '描述当前任务，选择与排列已有工具。' : launcher === 'generate' ? '描述一个新 App，让它在独立窗口中运行。' : '打开预制工具或你已经保存的 App。'}</p></div><button aria-label="关闭启动器" onClick={() => setLauncher(null)}>×</button></div>
+    <nav className="desktop-dock" aria-label="应用 Dock"><button className="dock-launcher" aria-label="打开应用启动器" onClick={() => setLauncher('apps')}><span>✳</span><small>启动器</small></button><div className="dock-separator" />{appIds.filter(tool => !tool.startsWith('generated:')).map(tool => <button key={tool} className="dock-item" aria-label={`打开${TOOLS[tool].title}`} onClick={() => launch(tool)} style={{ '--tool-color': colors[tool] || TOOLS[tool].color } as CSSProperties}><span className="app-icon"><Icon tool={tool} size={27} /></span><small>{TOOLS[tool].title}</small><i className={desktop.windows.some(window => window.tool === tool) ? 'running' : ''} /></button>)}</nav>
+    {launcher && <div className="launcher-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setLauncher(null); }}><section className="desktop-launcher" role="dialog" aria-label={launcher === 'layout' ? 'What you want do....' : launcher === 'generate' ? 'Vibe anything' : '应用启动器'} aria-modal="true">
+      <div className="launcher-heading"><span>{launcher === 'layout' ? '▦' : '✦'}</span><div><h2>{launcher === 'layout' ? '调整你的桌面。' : launcher === 'generate' ? 'Vibe anything' : '打开已有应用。'}</h2><p>{launcher === 'layout' ? '描述当前任务，选择与排列已有工具。' : launcher === 'generate' ? '描述一个新 App，让它在独立窗口中运行。' : '打开工具或你已经保存的 App。'}</p></div><button aria-label="关闭启动器" onClick={() => setLauncher(null)}>×</button></div>
       {launcher === 'layout' && <><form onSubmit={event => { event.preventDefault(); void planDesktop(layoutPrompt); }}><label className="visually-hidden" htmlFor="layout-input">描述桌面布局</label><input id="layout-input" ref={command} value={layoutPrompt} onChange={event => setLayoutPrompt(event.target.value)} placeholder="例如：笔记放左边，日历放右边，占三分之一" maxLength={2000} /><button type="submit" disabled={planning}>{planning ? '规划中…' : '调整桌面'}</button></form><div className="launcher-suggestions">{['约个时间讨论', '改成异步评审'].map(value => <button key={value} onClick={() => { setLayoutPrompt(value); void planDesktop(value); }}>{value} ↗</button>)}</div>{sceneStatus && <p role="status">{sceneStatus}</p>}</>}
       {launcher === 'generate' && <form onSubmit={event => { event.preventDefault(); void createApp(appPrompt); }}><label className="visually-hidden" htmlFor="app-prompt">描述你想生成的 App</label><input id="app-prompt" ref={command} value={appPrompt} onChange={event => setAppPrompt(event.target.value)} maxLength={2000} placeholder="例如：做一个复古番茄钟，或一个喝水提醒器" /><button type="submit" disabled={generating}>{generating ? '生成中…' : '生成 App'}</button></form>}
       {launcher === 'apps' && <div className="launcher-apps">{appIds.map(tool => <button key={tool} onClick={() => launch(tool)} style={{ '--tool-color': colors[tool] || TOOLS[tool].color } as CSSProperties}><span className="app-icon"><Icon tool={tool} size={25} /></span><strong>{TOOLS[tool].title}</strong><small>{TOOLS[tool].subtitle}</small></button>)}</div>}
-      <div className="launcher-note">{launcher === 'layout' ? '已有工具随任务组合 · 窗口内容保持原样' : launcher === 'generate' ? '生成后自动打开 · 保存后可从 Dock 再次使用' : '各 App 独立运行 · 打开已保存应用无需重新生成'}</div>
+      <div className="launcher-note">{launcher === 'layout' ? '已有工具随任务组合 · 窗口内容保持原样' : launcher === 'generate' ? '生成后自动打开 · 保存后可从启动器再次使用' : '各 App 独立运行 · 打开已保存应用无需重新生成'}</div>
     </section></div>}
     {failedGeneration && <GenerationFailure message={failedGeneration.message} onClose={() => setFailedGeneration(null)} onEdit={() => { setAppPrompt(failedGeneration.prompt); setFailedGeneration(null); setLauncher('generate'); }} onRetry={() => { void createApp(failedGeneration.prompt); }} />}
-    {settings && <aside className="desktop-settings"><div><h2>这个桌面</h2><button aria-label="关闭设置" onClick={() => setSettings(false)}>×</button></div><p>工具窗口可以共存、排列和恢复。笔记、会议草稿和待办沿用当前工作区的数据。</p><span className="settings-label">连接状态</span><strong>{props.configured ? 'Jev 已配置' : '本地规则演示'}</strong><p>模型密钥由本机服务管理。未配置时，需求通过本地关键词选择预制工具。</p>{!props.online && <p>当前离线，仍可编辑已有草稿、使用本地计算器。</p>}{props.pwa.canInstall && <button onClick={() => void props.pwa.install()}>安装应用</button>}{props.pwa.needRefresh && <button onClick={() => void props.pwa.update()}>更新应用</button>}{props.legacy && <button onClick={props.onImportLegacy}>导入旧版草稿</button>}</aside>}
+    {settings && <aside className="desktop-settings"><div><h2>这个桌面</h2><button aria-label="关闭设置" onClick={() => setSettings(false)}>×</button></div><p>工具窗口可以共存、排列和恢复。笔记、会议草稿和待办沿用当前工作区的数据。</p><span className="settings-label">连接状态</span><strong>{props.configured ? 'Jev 已配置' : '本地规则'}</strong><p>模型密钥由本机服务管理。未配置时，需求通过本地关键词选择工具。</p>{!props.online && <p>当前离线，仍可编辑已有草稿、使用本地计算器。</p>}{props.pwa.canInstall && <button onClick={() => void props.pwa.install()}>安装应用</button>}{props.pwa.needRefresh && <button onClick={() => void props.pwa.update()}>更新应用</button>}{props.legacy && <button onClick={props.onImportLegacy}>导入旧版草稿</button>}</aside>}
   </div>;
 }

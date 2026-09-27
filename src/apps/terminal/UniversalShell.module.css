@@ -1,0 +1,9 @@
+.container { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.container > section { flex: 1; height: auto; min-height: 0; }
+.switcher { display: flex; gap: 7px; padding: 7px 12px; background: #101923; border-bottom: 1px solid #304152; }
+.switcher button { color: #b7ccdd; background: #192b3a; border: 1px solid #344f64; padding: 4px 10px; font-size: 11px; }
+.switcher button[aria-pressed="true"] { background: #21493f; color: #a2f1c7; border-color: #58ac8b; }
+.notice { padding: 7px 14px; color: #ffcf9a; background: #2a2118; font-size: 11px; overflow-wrap: anywhere; }
+.echo { color: #68e5a2; white-space: pre-wrap; overflow-wrap: anywhere; margin-bottom: 3px; }
+
+.editor { flex: 1; width: 0; min-width: 0; min-height: 40px; max-height: 140px; height: 54px; resize: vertical; border: 0; border-radius: 0; background: transparent; color: #e6f1f8; padding: 4px 0; font: inherit; }

@@ -45,6 +45,8 @@ function FrameRuntime({ app, instanceId, host, active, onError, onRetry }: Gener
   const [error, setError] = useState(session.error);
   const [ready, setReady] = useState(false);
   const sequence = useRef(0);
+  const actionSequence = useRef(0);
+  const actions = useRef(new Map<string, { resolve(value: string): void; reject(error: Error): void; timer: number }>());
   const requestBudget = useRef({ since: 0, count: 0 });
   const reported = useRef('');
   const send = (payload: object) => iframe.current?.contentWindow?.postMessage({ channel: FRAME_CHANNEL, nonce: session.nonce, instanceId, ...payload }, '*');
@@ -64,6 +66,11 @@ function FrameRuntime({ app, instanceId, host, active, onError, onRetry }: Gener
       const nextSequence = Number(message.id.slice(2));
       if (nextSequence <= sequence.current) return;
       sequence.current = nextSequence;
+      if (message.type === 'action-result') {
+        const item = actions.current.get(message.actionId);
+        if (item) { window.clearTimeout(item.timer); actions.current.delete(message.actionId); if (message.ok) item.resolve(message.message); else item.reject(new Error(message.message)); }
+        return;
+      }
       if (message.type === 'ready') {
         setReady(true);
         send({ type: 'visibility', active: latest.current.active });
@@ -102,6 +109,22 @@ function FrameRuntime({ app, instanceId, host, active, onError, onRetry }: Gener
       window.removeEventListener('message', receive);
     };
   }, [session]);
+
+  useEffect(() => {
+    if (!ready || error || !host.registerActions) return;
+    const pendingActions = actions.current;
+    const unregister = host.registerActions((action, args) => {
+      if (!['start', 'pause', 'reset', 'bookmark', 'restore'].includes(action)) return Promise.reject(new Error('此应用不支持该操作'));
+      if (pendingActions.size >= 8) return Promise.reject(new Error('操作过于频繁'));
+      return new Promise<string>((resolve, reject) => {
+        const actionId = `a_${++actionSequence.current}`;
+        const timer = window.setTimeout(() => { pendingActions.delete(actionId); reject(new Error('应用操作超时')); }, 3500);
+        pendingActions.set(actionId, { resolve, reject, timer });
+        send({ type: 'action', actionId, action, args });
+      });
+    });
+    return () => { unregister(); for (const item of pendingActions.values()) { window.clearTimeout(item.timer); item.reject(new Error('应用已关闭或重新加载')); } pendingActions.clear(); };
+  }, [ready, error, host, session]);
 
   useEffect(() => {
     send({ type: 'visibility', active });

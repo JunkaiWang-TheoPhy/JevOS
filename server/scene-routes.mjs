@@ -5,7 +5,10 @@ import { planScene } from './scene-planner.mjs';
 export const SCENE_APPS = [
   ['message', '消息'], ['notes', '笔记'], ['calendar', '日历'], ['tasks', '评审待办'],
   ['contact', '联系人'], ['calculator', '计算器'], ['terminal', 'Terminal'],
-  ['motion-lab', 'Motion Lab'], ['generated:draft-data-studio', 'Data Studio · 预制样例'],
+  ['motion-lab', 'Motion Lab'], ['generated:draft-data-studio', 'Data Studio'],
+  ['music', '音乐'], ['generated:demo-reader', '晨间阅读'],
+  ['generated:demo-rehearsal-timer', '计时器'],
+  ['generated:demo-presentation', '路演文档 · JevOS'],
 ].map(([id, title]) => ({ id, title }));
 
 function failure(statusCode, code, message) { return Object.assign(new Error(message), { statusCode, code }); }

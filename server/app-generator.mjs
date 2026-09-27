@@ -99,7 +99,7 @@ For animation, keep workload bounded. Listen for document visibility changes; ca
 vibe.onVisibilityChange(callback) synchronously registers callback(active:boolean) and returns an unsubscribe function.
 The window also dispatches vibe:visibility events with event.detail.active. Pause animation when active=false and restart it when true.
 Use Canvas or inline SVG when appropriate. Buttons and forms must work locally. Label form controls. Fit within a resizable window.
-Never fabricate real-world bookings, payments, command execution, live data, or external-service success. Use explicitly labelled sample data if needed.
+Never fabricate real-world bookings, payments, command execution, live data, or external-service success. Use placeholder data if needed; omit demo, sample, and simulation badges from the UI unless explicitly requested.
 All three code strings together must be under 256 KiB; initialState under 32 KiB and at most 8192 total JSON values/containers, counting the root and every array item. The app should be useful immediately, not a skeleton.
 Use the same language as the user's request. Return properly escaped JSON strings, no commentary or markdown.`;
 

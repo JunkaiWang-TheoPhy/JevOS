@@ -1,20 +1,44 @@
 /* Animate existing frames: app DOM, iframe identity and input state stay intact. */
 .desktop .desktop-window {
   transition:
-    left .46s cubic-bezier(.22, 1, .36, 1),
-    top .46s cubic-bezier(.22, 1, .36, 1),
-    width .46s cubic-bezier(.22, 1, .36, 1),
-    height .46s cubic-bezier(.22, 1, .36, 1),
-    box-shadow .18s;
-  animation-duration: .28s;
-  animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+    left .9s cubic-bezier(.22, .61, .36, 1),
+    top .9s cubic-bezier(.22, .61, .36, 1),
+    width .9s cubic-bezier(.22, .61, .36, 1),
+    height .9s cubic-bezier(.22, .61, .36, 1),
+    box-shadow .32s;
+  animation-duration: .5s;
+  animation-timing-function: cubic-bezier(.22, .61, .36, 1);
 }
 
 /* The pointer handler captures the currently rendered frame before setting
    this marker, so interruption does not snap to the previous destination. */
 .desktop .desktop-window.is-interacting {
-  transition: box-shadow .18s;
+  transition: box-shadow .32s;
 }
+
+/* A shared, quieter rhythm for the desktop chrome. App clocks and canvas
+   runtimes keep their own timing; generated iframes remain independent. */
+.desktop button {
+  transition-duration: .32s;
+  transition-timing-function: cubic-bezier(.22, .61, .36, 1);
+}
+.desktop :is(.app-icon, .dock-launcher > span) {
+  transition: transform .4s cubic-bezier(.22, .61, .36, 1), box-shadow .4s;
+}
+.desktop :is(.dock-item:hover .app-icon, .dock-launcher:hover > span) {
+  transform: translateY(-5px) scale(1.08);
+}
+.desktop :is(.dock-item small, .dock-launcher small) { transition: opacity .3s ease; }
+.desktop .app-generation-progress > span { animation-duration: 2.5s; }
+.desktop :is([role="dialog"], [role="alertdialog"], .desktop-settings) {
+  animation: desktop-panel-enter .5s cubic-bezier(.22, .61, .36, 1);
+}
+.desktop .launcher-backdrop { animation: desktop-backdrop-enter .4s ease; }
+@keyframes desktop-panel-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes desktop-backdrop-enter { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
   .desktop .desktop-window {

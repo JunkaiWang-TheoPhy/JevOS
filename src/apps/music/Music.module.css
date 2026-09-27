@@ -1,0 +1,75 @@
+.player { min-height: 100%; height: auto!important; background: #f7f2e9; color: #382e29; padding: 25px 28px 18px; font-family: ui-sans-serif, system-ui, sans-serif; }
+.player * { box-sizing: border-box; }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.eyebrow { font-size: 9px; letter-spacing: 1.8px; color: #9c745b; font-weight: 650; }
+.heading h1 { margin: 7px 0 0; font-size: clamp(17px, 3vw, 23px); letter-spacing: -.5px; font-weight: 550; }
+.count { white-space: nowrap; border: 1px solid #d6c9b8; border-radius: 20px; padding: 5px 9px; font-size: 10px; color: #8d7059; }
+.nowPlaying { display: flex; align-items: center; gap: 27px; padding: 26px 0 20px; }
+.record { flex: 0 0 126px; height: 126px; display: grid; place-items: center; border-radius: 50%; background: repeating-radial-gradient(circle, #262827 0 2px, #363936 3px 4px); box-shadow: 0 10px 22px #3b2e2320; animation: turn 18s linear infinite; animation-play-state: paused; }
+.record > div { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 55px; height: 55px; border-radius: 50%; background: #b97851; color: #fff4da; border: 3px solid #242825; }
+.record span { font-family: Georgia, serif; font-style: italic; font-size: 28px; line-height: 1; }
+.record small { font-size: 5px; color: inherit; letter-spacing: 1px; }
+.spinning { animation-play-state: running; }
+.description { min-width: 0; }
+.description h2 { font-family: Georgia, 'Songti SC', serif; font-size: 22px; font-weight: 550; margin: 8px 0 9px; line-height: 1.4; }
+.description p { margin: 0 0 5px; color: #776557; font-size: 12px; }
+.description small { font-size: 10px; color: #8f8175; }
+.transport { background: #fffaf3; border: 1px solid #e5dcd0; border-radius: 15px; padding: 12px 17px 9px; }
+.seek { display: flex; align-items: center; gap: 10px; font-size: 10px; font-variant-numeric: tabular-nums; color: #8b7564; }
+.player input[type=range] { min-height: 20px; padding: 0; border: 0; background: transparent; accent-color: #a35a41; cursor: pointer; }
+.seek input { flex: 1; width: 0; }
+.controls { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 8px 0 3px; }
+.buttons { display: flex; align-items: center; gap: 10px; }
+.buttons button { color: #835d45; background: transparent; border: none; padding: 8px; font-size: 18px; }
+.buttons .play { display: grid; place-items: center; width: 39px; height: 39px; padding: 0; border-radius: 50%; background: #a6563e; color: #fff; font-size: 16px; }
+.volume { display: flex; align-items: center; gap: 8px; font-size: 10px; color: #907965; margin: 0; }
+.volume input { width: 80px; }
+.status { min-height: 18px; font-size: 10px; color: #947a68; padding-top: 2px; }
+.listHeading { display: flex; justify-content: space-between; align-items: center; margin-top: 19px; }
+.listHeading h3 { margin: 0; font-size: 12px; font-weight: 650; }
+.listHeading span { color: #aa9480; font-size: 9px; }
+.tracks { list-style: none; margin: 8px 0 0; padding: 0; }
+.tracks li { margin: 0; }
+.tracks button { display: flex; align-items: center; gap: 12px; width: 100%; border: none; background: transparent; text-align: left; padding: 9px 10px; border-radius: 9px; color: #4b4036; }
+.tracks button:hover { background: #eee4d7; }
+.tracks .selected { background: #e9ddcd; }
+.number { width: 19px; flex-shrink: 0; font-variant-numeric: tabular-nums; font-size: 11px; color: #9c765d; }
+.trackInfo { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.trackInfo strong { font-size: 11px; font-weight: 600; }
+.trackInfo small { font-size: 9px; color: #93816e; }
+.trackKind { font-size: 9px; color: #9c8b7b; margin-left: auto; white-space: nowrap; }
+.footer { display: flex; align-items: center; gap: 10px; margin-top: 15px; font-size: 9px; color: #9f8f7e; }
+.footer a { color: #8e7359; text-decoration: none; }
+.footer span { margin-left: auto; }
+@keyframes turn { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .record { animation: none; } }
+@media (max-width: 600px) { .player { padding: 18px; } .record { flex-basis: 88px; height: 88px; } .nowPlaying { gap: 16px; } .description h2 { font-size: 18px; } }
+/* Keep the transport reachable while a narrow desktop window scrolls its list. */
+.player { container-type: inline-size; }
+.transport { position: sticky; top: 0; z-index: 1; }
+.controls { flex-wrap: wrap; }
+@container (max-width: 360px) {
+  .heading { align-items: flex-start; gap: 7px; }
+  .heading h1 { font-size: 16px; line-height: 1.4; }
+  .heading .eyebrow { font-size: 7px; letter-spacing: .5px; }
+  .count { padding: 3px 6px; font-size: 9px; }
+  .nowPlaying { gap: 12px; padding: 15px 0; }
+  .record { flex-basis: 64px; height: 64px; }
+  .record > div { width: 38px; height: 38px; }
+  .record span { font-size: 22px; }
+  .description h2 { font-size: 16px; margin: 5px 0; }
+  .description small { font-size: 9px; overflow-wrap: anywhere; }
+  .transport { padding: 10px 11px 8px; }
+  .seek { gap: 5px; font-size: 9px; }
+  .controls { gap: 6px; }
+  .buttons { gap: 4px; }
+  .buttons button { padding: 6px; }
+  .volume { flex: 1; min-width: 92px; gap: 5px; }
+  .volume input { width: 60px; max-width: 100%; }
+  .tracks button { padding: 8px 4px; gap: 7px; }
+  .trackInfo { overflow-wrap: anywhere; }
+  .trackKind { display: none; }
+  .listHeading { gap: 7px; }
+  .footer { flex-wrap: wrap; }
+  .footer span { margin-left: 0; }
+}

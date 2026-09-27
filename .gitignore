@@ -7,3 +7,6 @@ dist/
 .release-assets/
 .DS_Store
 *.log
+
+.pages-preview/
+.omx/

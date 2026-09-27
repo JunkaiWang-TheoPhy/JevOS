@@ -14,7 +14,11 @@
 
 JevOS is an installable desktop that arranges tools around your task. Jev selects tools and layouts, a language model generates miniature apps, and notes and application state persist as you work.
 
-This repository contains the runtime source for JevOS v2.
+This repository contains the latest JevOS desktop and website source.
+
+## Website
+
+[Open JevOS](https://junkaiwang-theophy.github.io/JevOS/) · Download the desktop or try local tools in the browser.
 
 ## Run
 
@@ -37,7 +41,7 @@ Task and application data are stored in `.data/`.
 
 ## macOS download
 
-Download JevOS v2 from [Releases](https://github.com/JunkaiWang-TheoPhy/JevOS/releases/tag/v0.1.0-v2). Quit JevOS, then drag the app into Applications. Supports Apple Silicon and macOS 13+.
+Download JevOS from [Releases](https://github.com/JunkaiWang-TheoPhy/JevOS/releases). Quit JevOS, then drag the app into Applications. Supports Apple Silicon and macOS 13+.
 
 The release includes the DMG, complete source archive, file manifest and SHA-256 checksums. Native host source is in `packaging/macos/JevOS.swift`.
 

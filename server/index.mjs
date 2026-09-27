@@ -8,12 +8,14 @@ import { createGeneratedAppStore } from './generated-app-store.mjs';
 import { createGeneratedAppHandler } from './generated-app-routes.mjs';
 import { generatorConfig as readGeneratorConfig } from './app-generator.mjs';
 import { createSceneHandler } from './scene-routes.mjs';
+import { createMessageSimulationHandler } from './message-sim-handler.mjs';
+import { createTerminalSimulationHandler } from './terminal-simulation.mjs';
 
 const root = resolve(fileURLToPath(new URL('../dist/', import.meta.url)));
 const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8', '.webmanifest': 'application/manifest+json',
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.ico': 'image/x-icon',
-  '.woff': 'font/woff', '.woff2': 'font/woff2' };
+  '.woff': 'font/woff', '.woff2': 'font/woff2', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg', '.wav': 'audio/wav' };
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -33,6 +35,10 @@ export function createAppServer({ serveStatic = false, apiKey = process.env.TYPE
     allowedOrigins, config: generationConfig, fetcher, maxGenerationsPerDay, sessionCookieName });
   const sceneHandler = createSceneHandler({ store, appStore: generatedStore, allowedOrigins, sessionCookieName,
     apiKey, model, fetcher, timeoutMs: modelTimeoutMs, maxPlansPerDay: maxDecisionsPerDay });
+  const messageHandler = createMessageSimulationHandler({ workspaceStore: store, appStore: generatedStore,
+    allowedOrigins, sessionCookieName, configFactory: () => generationConfig, fetcher });
+  const terminalHandler = createTerminalSimulationHandler({ workspaceStore: store, allowedOrigins,
+    sessionCookieName, configFactory: () => generationConfig, fetcher });
   const server = createServer(async (req, res) => {
     try {
       const path = new URL(req.url, 'http://localhost').pathname;
@@ -40,6 +46,8 @@ export function createAppServer({ serveStatic = false, apiKey = process.env.TYPE
         if (await workspaceHandler(req, res, path)) return;
         if (await appHandler(req, res, path)) return;
         if (await sceneHandler(req, res, path)) return;
+        if (await messageHandler(req, res, path)) return;
+        if (await terminalHandler(req, res, path)) return;
         if (path === '/api/config' && req.method === 'GET') {
           json(res, 200, { jevConfigured: Boolean(apiKey), generatorConfigured: Boolean(generationConfig.apiKey && generationConfig.model) });
           return;
@@ -61,10 +69,26 @@ export function createAppServer({ serveStatic = false, apiKey = process.env.TYPE
         file = resolve(root, 'index.html');
       }
       const data = await readFile(file);
-      res.writeHead(200, { 'Content-Type': types[extname(file)] || 'application/octet-stream',
+      const headers = { 'Content-Type': types[extname(file)] || 'application/octet-stream',
         'Cache-Control': path.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache',
         'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin',
-        'Content-Security-Policy': "frame-src 'self' blob:; object-src 'none'; base-uri 'self'" });
+        'Content-Security-Policy': "frame-src 'self' blob:; object-src 'none'; base-uri 'self'",
+        'Content-Length': data.length };
+      if (['.ogg', '.mp3', '.wav'].includes(extname(file))) {
+        headers['Accept-Ranges'] = 'bytes';
+        if (req.headers.range) {
+          const match = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range);
+          let start = match?.[1] ? Number(match[1]) : match?.[2] ? Math.max(0, data.length - Number(match[2])) : NaN;
+          const end = match?.[1] && match?.[2] ? Math.min(data.length - 1, Number(match[2])) : data.length - 1;
+          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start > end || start >= data.length) {
+            res.writeHead(416, { 'Content-Range': `bytes */${data.length}`, 'Content-Length': 0 }); res.end(); return;
+          }
+          start = Math.floor(start);
+          res.writeHead(206, { ...headers, 'Content-Length': end - start + 1, 'Content-Range': `bytes ${start}-${end}/${data.length}` });
+          res.end(req.method === 'HEAD' ? undefined : data.subarray(start, end + 1)); return;
+        }
+      }
+      res.writeHead(200, headers);
       res.end(req.method === 'HEAD' ? undefined : data);
     } catch (error) {
       if (!res.headersSent) json(res, error.statusCode || 400, { error: '请求无法处理。' });
@@ -72,7 +96,7 @@ export function createAppServer({ serveStatic = false, apiKey = process.env.TYPE
   });
   const closeServer = server.close.bind(server);
   server.close = callback => {
-    appHandler.close(); workspaceHandler.close(); sceneHandler.close();
+    appHandler.close(); workspaceHandler.close(); sceneHandler.close(); messageHandler.close(); terminalHandler.close();
     return closeServer(callback);
   };
   server.once('close', () => { generatedStore.close(); store.close(); });

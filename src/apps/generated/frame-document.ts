@@ -17,6 +17,10 @@ export interface FrameRequest {
   method: FrameMethod;
   args: AppJson[];
 }
+export interface FrameActionResult {
+  channel: typeof FRAME_CHANNEL; nonce: string; instanceId: string; id: string;
+  type: 'action-result'; actionId: string; ok: boolean; message: string;
+}
 export interface FrameSignal {
   channel: typeof FRAME_CHANNEL;
   nonce: string;
@@ -47,9 +51,13 @@ export function isSafeState(value: unknown): value is AppJson {
   catch { return false; }
 }
 
-export function parseFrameMessage(value: unknown, nonce: string, source: unknown, expectedSource: unknown, instanceId: string): FrameRequest | FrameSignal | null {
+export function parseFrameMessage(value: unknown, nonce: string, source: unknown, expectedSource: unknown, instanceId: string): FrameRequest | FrameSignal | FrameActionResult | null {
   if (!expectedSource || source !== expectedSource || !record(value)) return null;
   if (value.channel !== FRAME_CHANNEL || value.nonce !== nonce || value.instanceId !== instanceId || typeof value.id !== 'string' || !/^m_[1-9][0-9]{0,12}$/.test(value.id)) return null;
+  if (value.type === 'action-result') {
+    if (typeof value.actionId !== 'string' || !/^a_[1-9][0-9]{0,12}$/.test(value.actionId) || typeof value.ok !== 'boolean' || typeof value.message !== 'string' || value.message.length > 1000) return null;
+    return { channel: FRAME_CHANNEL, nonce, instanceId, id: value.id, type: 'action-result', actionId: value.actionId, ok: value.ok, message: value.message };
+  }
   if (value.type === 'ready') return { channel: FRAME_CHANNEL, nonce, instanceId, id: value.id, type: 'ready' };
   if (value.type === 'runtime-error') {
     return typeof value.message === 'string' && value.message.length <= 2000
@@ -120,10 +128,11 @@ export function buildFrameDocument(app: Pick<GeneratedAppPackage, 'html' | 'css'
     if (pending.size >= 64) { reject(new Error('请求过多，请稍后重试')); return; }
     const id = nextId();
     if (disposed) { reject(new Error('应用已关闭')); return; }
-    const timer = nativeTimeout(() => { pending.delete(id); reject(new Error('宿主请求超时')); }, 10000);
-    pending.set(id, { resolve, reject, timer });
+    const timer = nativeTimeout(() => { const item = pending.get(id); pending.delete(id); item?.reject(new Error('宿主请求超时')); }, 10000);
+    let finish; let fail; const completion = new Promise((yes, no) => { finish = yes; fail = no; }); completion.catch(() => {});
+    pending.set(id, { resolve: value => { finish(value); resolve(value); }, reject: error => { fail(error); reject(error); }, timer, completion });
     try { post({ channel, nonce, instanceId, id, type: 'request', method, args }, '*'); }
-    catch (error) { nativeClearTimeout(timer); pending.delete(id); reject(error); }
+    catch (error) { nativeClearTimeout(timer); const item = pending.get(id); pending.delete(id); item?.reject(error); }
   });
   const cancelResource = id => {
     const item = resources.get(id);
@@ -187,6 +196,44 @@ export function buildFrameDocument(app: Pick<GeneratedAppPackage, 'html' | 'css'
   };
   addEventListener('pagehide', dispose, { once: true });
   document.addEventListener('visibilitychange', () => activity(desiredActive));
+
+  async function performAction(action, args) {
+    if (!initialized || hadError || !args || typeof args !== 'object') throw new Error('未就绪');
+    const button = id => { const element = document.getElementById(id); if (!(element instanceof HTMLButtonElement) || element.disabled) throw new Error('操作不可用'); return element; };
+    const settling = async () => {
+      await Promise.resolve();
+      const requests = [...pending.values()];
+      if (requests.length) await Promise.all(requests.map(item => item.completion));
+      if (hadError) throw new Error('运行失败');
+    };
+    if (action === 'bookmark' || action === 'restore') {
+      const before = JSON.stringify(snapshot); const scroll = document.scrollingElement?.scrollTop; const text = document.getElementById('vibe-root').textContent;
+      button(action === 'bookmark' ? 'mark' : 'restore').click(); await settling();
+      if (JSON.stringify(snapshot) === before && document.scrollingElement?.scrollTop === scroll && document.getElementById('vibe-root').textContent === text) throw new Error('未确认阅读操作');
+      return action === 'bookmark' ? '已保存阅读书签' : '已恢复阅读书签';
+    }
+    if (!['start', 'pause', 'reset'].includes(action)) throw new Error('未知操作');
+    const modern = document.getElementById('focusInput');
+    const retro = document.getElementById('duration');
+    if (!modern && !retro) throw new Error('不是支持的计时器');
+    if (action === 'start') {
+      const minutes = args.minutes;
+      if (!Number.isInteger(minutes) || minutes < 1 || minutes > 120) throw new Error('分钟无效');
+      const input = modern || retro;
+      if (input.disabled) throw new Error('计时器正在运行');
+      if (input instanceof HTMLSelectElement && ![...input.options].some(option => option.value === String(minutes))) { const option = document.createElement('option'); option.value = String(minutes); option.textContent = minutes + ' 分钟'; input.appendChild(option); }
+      input.value = String(minutes); input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true }));
+      if (modern && document.getElementById('saveBtn')) button('saveBtn').click();
+      await settling();
+    }
+    const target = modern ? { start: 'startBtn', pause: 'pauseBtn', reset: 'resetBtn' }[action] : action;
+    const before = JSON.stringify(snapshot);
+    button(target).click(); await settling();
+    if (JSON.stringify(snapshot) === before) throw new Error('未确认状态改变');
+    return action === 'start' ? '计时已开始' : action === 'pause' ? '计时已暂停' : '计时已重置';
+  }
+  let actionSequence = 0;
+  let actionBusy = false;
   addEventListener('message', event => {
     const data = event.data;
     if (event.source !== parent || !data || data.channel !== channel || data.nonce !== nonce || data.instanceId !== instanceId || disposed) return;
@@ -195,6 +242,11 @@ export function buildFrameDocument(app: Pick<GeneratedAppPackage, 'html' | 'css'
       nativeClearTimeout(item.timer); pending.delete(data.id);
       if (data.ok) { snapshot = clone(data.value); item.resolve(clone(snapshot)); }
       else item.reject(new Error(data.error || '宿主操作失败'));
+    } else if (data.type === 'action' && /^a_[1-9][0-9]{0,12}$/.test(data.actionId)) {
+      const number = Number(data.actionId.slice(2)); if (number <= actionSequence) return; actionSequence = number;
+      if (actionBusy) { send('action-result', { actionId: data.actionId, ok: false, message: '上一项操作尚未完成' }); return; }
+      actionBusy = true;
+      void performAction(data.action, data.args).then(message => send('action-result', { actionId: data.actionId, ok: true, message }), () => send('action-result', { actionId: data.actionId, ok: false, message: '此应用不支持该操作或操作未完成' })).finally(() => { actionBusy = false; });
     } else if (data.type === 'start') {
       activity(data.active === true);
       if (!initialized) { initialized = true; snapshot = clone(data.state); mount(); }
